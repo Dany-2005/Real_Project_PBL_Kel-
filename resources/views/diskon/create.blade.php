@@ -37,84 +37,100 @@
                     @error('nama_diskon') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Besar Diskon (%)</label>
-                    <input type="number" name="besar_diskon" value="{{ old('besar_diskon') }}" min="1" max="100"
-                           class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-                    @error('besar_diskon') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Besar Diskon (%)</label>
+                        <input type="number" name="besar_diskon" value="{{ old('besar_diskon') }}" min="1" max="100"
+                               class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min. Beli Eceran (pcs)</label>
+                        <input type="number" name="minimal_beli" id="minBeli" value="{{ old('minimal_beli', 0) }}" min="0"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min. Beli Grosir (pcs)</label>
+                        <input type="number" name="minimal_beli_grosir" id="minBeliGrosir" value="{{ old('minimal_beli_grosir', 0) }}" min="0"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                    </div>
                 </div>
+                
+                <div class="sm:col-span-2">
+                     <div id="previewDiskon" class="text-sm text-[#2d6a4f] bg-green-50 border border-green-100 rounded-xl px-4 py-3 min-h-[40px]"></div>
+                     </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Minimal Beli (pcs)</label>
-                    <input type="number" name="minimal_beli" value="{{ old('minimal_beli', 1) }}" min="1"
-                           class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-                    @error('minimal_beli') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Lokasi Berlaku</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="lokasi_berlaku" value="semua" {{ old('lokasi_berlaku', 'semua') == 'semua' ? 'checked' : '' }} class="text-[#2d6a4f] focus:ring-[#2d6a4f]">
+                            <span class="text-sm text-gray-700">Semua</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="lokasi_berlaku" value="gudang" {{ old('lokasi_berlaku') == 'gudang' ? 'checked' : '' }} class="text-[#2d6a4f] focus:ring-[#2d6a4f]">
+                            <span class="text-sm text-gray-700">Gudang</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="lokasi_berlaku" value="toko" {{ old('lokasi_berlaku') == 'toko' ? 'checked' : '' }} class="text-[#2d6a4f] focus:ring-[#2d6a4f]">
+                            <span class="text-sm text-gray-700">Toko</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label>
                     <input type="date" name="mulai_tgl" value="{{ old('mulai_tgl') }}"
                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-                    @error('mulai_tgl') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Selesai</label>
                     <input type="date" name="selesai_tgl" value="{{ old('selesai_tgl') }}"
                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-                    @error('selesai_tgl') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="sm:col-span-2">
-    <label class="block text-sm font-medium text-gray-700 mb-1">Target Pelanggan</label>
-    <select name="id_pelanggan" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-        <option value="">Semua Pelanggan</option>
-        @foreach($pelanggan as $plg)
-            <option value="{{ $plg->id_pelanggan }}" 
-                {{ (isset($diskon) && $diskon->id_pelanggan == $plg->id_pelanggan) || old('id_pelanggan') == $plg->id_pelanggan ? 'selected' : '' }}>
-                {{ $plg->nama_pelanggan }}
-            </option>
-        @endforeach
-    </select>
-    <p class="text-xs text-gray-400 mt-1">Kosongkan jika ingin diskon berlaku untuk semua pelanggan.</p>
-</div>
-
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Target Pelanggan</label>
+                    <select name="id_pelanggan" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                        <option value="">Semua Pelanggan</option>
+                        @foreach($pelanggan as $plg)
+                            <option value="{{ $plg->id_pelanggan }}" {{ old('id_pelanggan') == $plg->id_pelanggan ? 'selected' : '' }}>
+                                {{ $plg->nama_pelanggan }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Kosongkan jika ingin diskon berlaku untuk semua pelanggan.</p>
+                </div>
 
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Produk</label>
-                    <div class="sm:col-span-2">
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="searchProduk" placeholder="Cari nama produk..."
+                               class="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                        <select id="filterKategori"
+                                class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                            <option value="">Semua Kategori</option>
+                            @foreach($produk->groupBy('id_kategori') as $idKat => $produkPerKat)
+                                <option value="{{ $idKat }}">{{ $produkPerKat->first()->kategori->nama_kategori ?? '-' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-    {{-- Filter --}}
-    <div class="flex gap-2 mb-2">
-        <input type="text" id="searchProduk" placeholder="Cari nama produk..."
-               class="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-        <select id="filterKategori"
-                class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-            <option value="">Semua Kategori</option>
-            @foreach($produk->groupBy('id_kategori') as $idKat => $produkPerKat)
-                <option value="{{ $idKat }}">{{ $produkPerKat->first()->kategori->nama_kategori ?? '-' }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- List produk --}}
-    <div id="listProduk" class="grid grid-cols-2 sm:grid-cols-3 gap-2 border border-gray-200 rounded-xl p-4 max-h-56 overflow-y-auto">
-        @foreach($produk as $p)
-            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer produk-item"
-                   data-nama="{{ strtolower($p->nama_produk) }}"
-                   data-kategori="{{ $p->id_kategori }}">
-                <input type="checkbox" name="id_produk[]" value="{{ $p->id_produk }}"
-                       {{ in_array($p->id_produk, old('id_produk', [])) ? 'checked' : '' }}
-                       class="rounded text-[#2d6a4f]">
-                <span>
-                    {{ $p->nama_produk }}
-                    <span class="text-xs text-gray-400">({{ $p->kategori->nama_kategori ?? '-' }})</span>
-                </span>
-            </label>
-        @endforeach
-    </div>
-    @error('id_produk') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-</div>
+                    <div id="listProduk" class="grid grid-cols-2 sm:grid-cols-3 gap-2 border border-gray-200 rounded-xl p-4 max-h-56 overflow-y-auto">
+                        @foreach($produk as $p)
+                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer produk-item"
+                                   data-nama="{{ strtolower($p->nama_produk) }}"
+                                   data-kategori="{{ $p->id_kategori }}">
+                                <input type="checkbox" name="id_produk[]" value="{{ $p->id_produk }}"
+                                       {{ in_array($p->id_produk, old('id_produk', [])) ? 'checked' : '' }}
+                                       class="rounded text-[#2d6a4f]">
+                                <span>
+                                    {{ $p->nama_produk }}
+                                    <span class="text-xs text-gray-400">({{ $p->kategori->nama_kategori ?? '-' }})</span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
                     @error('id_produk') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -126,7 +142,6 @@
                         <span class="font-medium">Aktifkan diskon ini</span>
                     </label>
                 </div>
-
             </div>
 
             <div class="flex items-center gap-3 mt-6">
@@ -143,26 +158,70 @@
     </div>
 
     <script>
-    const searchInput = document.getElementById('searchProduk');
-    const filterKategori = document.getElementById('filterKategori');
-    const items = document.querySelectorAll('.produk-item');
+// Search & filter produk
+const searchInput = document.getElementById('searchProduk');
+const filterKategori = document.getElementById('filterKategori');
+const items = document.querySelectorAll('.produk-item');
 
-    function filterProduk() {
-        const keyword = searchInput.value.toLowerCase();
-        const kategori = filterKategori.value;
+function filterProduk() {
+    const keyword = searchInput.value.toLowerCase();
+    const kategori = filterKategori.value;
+    items.forEach(item => {
+        const matchNama = item.dataset.nama.includes(keyword);
+        const matchKat  = kategori === '' || item.dataset.kategori === kategori;
+        item.style.display = (matchNama && matchKat) ? '' : 'none';
+    });
+}
+searchInput.addEventListener('input', filterProduk);
+filterKategori.addEventListener('change', filterProduk);
 
-        items.forEach(item => {
-            const nama = item.dataset.nama;
-            const kat = item.dataset.kategori;
+// Lokasi berlaku → hide/show field min beli
+const radioLokasi  = document.querySelectorAll('input[name="lokasi_berlaku"]');
+const wrapEceran   = document.getElementById('minBeli').closest('div');
+const wrapGrosir   = document.getElementById('minBeliGrosir').closest('div');
 
-            const matchNama = nama.includes(keyword);
-            const matchKat = kategori === '' || kat === kategori;
+function updateLokasi() {
+    const val = document.querySelector('input[name="lokasi_berlaku"]:checked').value;
+    if (val === 'semua') {
+        wrapEceran.style.display  = '';
+        wrapGrosir.style.display  = '';
+    } else if (val === 'gudang') {
+        wrapEceran.style.display  = 'none';
+        wrapGrosir.style.display  = '';
+    } else { // toko
+        wrapEceran.style.display  = '';
+        wrapGrosir.style.display  = 'none';
+    }
+    updatePreview();
+}
+radioLokasi.forEach(r => r.addEventListener('change', updateLokasi));
+updateLokasi(); // jalanin saat load
 
-            item.style.display = (matchNama && matchKat) ? '' : 'none';
-        });
+// Preview diskon
+function updatePreview() {
+    const besar     = parseFloat(document.querySelector('input[name="besar_diskon"]').value) || 0;
+    const lokasi    = document.querySelector('input[name="lokasi_berlaku"]:checked').value;
+    const minEceran = parseInt(document.getElementById('minBeli').value) || 1;
+    const minGrosir = parseInt(document.getElementById('minBeliGrosir').value) || 1;
+    const preview   = document.getElementById('previewDiskon');
+
+    if (besar <= 0) {
+        preview.innerHTML = '';
+        return;
     }
 
-    searchInput.addEventListener('input', filterProduk);
-    filterKategori.addEventListener('change', filterProduk);
+    let teks = '';
+    if (lokasi === 'semua' || lokasi === 'toko') {
+        teks += `Eceran: beli min <b>${minEceran} pcs</b> → hemat <b>${besar}%</b><br>`;
+    }
+    if (lokasi === 'semua' || lokasi === 'gudang') {
+        teks += `Grosir: beli min <b>${minGrosir} pcs</b> → hemat <b>${besar}%</b>`;
+    }
+    preview.innerHTML = teks;
+}
+
+document.querySelector('input[name="besar_diskon"]').addEventListener('input', updatePreview);
+document.getElementById('minBeli').addEventListener('input', updatePreview);
+document.getElementById('minBeliGrosir').addEventListener('input', updatePreview);
 </script>
 </x-app-layout>

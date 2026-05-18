@@ -93,7 +93,7 @@
                             <a href="{{ route('landing.index') }}" class="block px-4 py-2 rounded-xl text-sm font-bold {{ request()->routeIs('landing.*') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f]' }}">Landing Page</a>
                             <a href="{{ route('pengaturan.pemilik') }}" class="block px-4 py-2 rounded-xl text-sm font-bold {{ request()->is('pengaturan/pemilik') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f]' }}">Akun Pemilik</a>
                             <a href="{{ route('pengaturan.kasir') }}" class="block px-4 py-2 rounded-xl text-sm font-bold {{ request()->is('pengaturan/kasir') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f]' }}">Akun Kasir</a>
-                            <a href="{{ route('pengaturan.suplier') }}" class="block px-4 py-2 rounded-xl text-sm font-bold {{ request()->is('pengaturan/suplier') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f]' }}">Akun Suplier</a>
+                            <a href="{{ route('pengaturan.suplier') }}" class="block px-4 py-2 rounded-xl text-sm font-bold {{ request()->is('pengaturan/suplier') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f]' }}">Data Suplier</a>
                         </div>
                     </div>
                 @endif

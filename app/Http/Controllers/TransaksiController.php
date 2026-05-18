@@ -1,37 +1,47 @@
 <?php
 
-namespace App\Http\Controllers;
+    namespace App\Http\Controllers;
 
-use App\Models\Transaksi;
-use App\Models\DetailTransaksi;
-use App\Models\Produk;
-use App\Models\Pelanggan;
-use App\Models\Kategori;
-use App\Models\Diskon;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
+    use App\Models\Transaksi;
+    use App\Models\DetailTransaksi;
+    use App\Models\Produk;
+    use App\Models\Pelanggan;
+    use App\Models\Kategori;
+    use App\Models\Diskon;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\DB;
+    use Illuminate\Support\Facades\Auth;
+    use Carbon\Carbon;
 
-class TransaksiController extends Controller
-{
-    public function index()
+    class TransaksiController extends Controller
     {
-        $transaksi = Transaksi::with(['detail.produk', 'pelanggan'])
-            ->latest('id_transaksi')
-            ->get();
-        return view('transaksi.index', compact('transaksi'));
-    }
+        public function index()
+        {
+    $transaksi = Transaksi::with(['detail.produk', 'pelanggan'])
+        ->where('id_user', Auth::id())  // ← tambah ini
+        ->latest('id_transaksi')
+        ->get();
+    return view('transaksi.index', compact('transaksi'));
+        }
 
     public function create()
     {
-        $produk    = Produk::with(['kategori'])->get();
-        $kategori  = Kategori::all();
-        $pelanggan = Pelanggan::all();
-        return view('transaksi.create', compact('produk', 'kategori', 'pelanggan'));
-    }
+        $today = now()->toDateString();
+
+        $produk = Produk::with(['kategori', 'diskon' => function($query) use ($today) {
+            $query->where('is_aktif', true)
+                ->where('mulai_tgl', '<=', $today)
+                ->where('selesai_tgl', '>=', $today);
+        }])->get();
+
+        $kategori = Kategori::all();
+
+        $pelanggan = Pelanggan::all();    
+        return view('transaksi.create', compact('produk', 'kategori', 'pelanggan'));}
 
     public function store(Request $request)
     {
-        // Decode keranjang dari JSON string ke array
+        // Decode keranjang jika dikirim dalam bentuk string JSON
         if (is_string($request->keranjang)) {
             $request->merge([
                 'keranjang' => json_decode($request->keranjang, true)
@@ -47,45 +57,75 @@ class TransaksiController extends Controller
             'bayar'                 => 'required|integer|min:0',
         ]);
 
-        $today               = Carbon::today()->toDateString();
         $subtotalKeseluruhan = 0;
         $totalDiskon         = 0;
         $items               = [];
+
+        // Ambil data pelanggan untuk diskon (Sinkron dengan JS)
+        $pelanggan = null;
+        if ($request->id_pelanggan) {
+            $pelanggan = Pelanggan::find($request->id_pelanggan);
+        }
 
         foreach ($request->keranjang as $item) {
             $produk = Produk::findOrFail($item['id_produk']);
             $jumlah = $item['jumlah'];
             $tipe   = $item['tipe'];
 
-            // Tentukan harga berdasarkan tipe
-            $harga = $tipe === 'grosir'
-                ? ($produk->harga_grosir ?? $produk->harga_satuan)
+            // 1. Tentukan harga dasar
+            $harga = ($tipe === 'grosir') 
+                ? ($produk->harga_grosir ?? $produk->harga_satuan) 
                 : $produk->harga_satuan;
 
-            // Cek diskon aktif untuk produk ini
-            $diskon = Diskon::where('is_aktif', true)
-                ->where('mulai_tgl', '<=', $today)
-                ->where('selesai_tgl', '>=', $today)
-                ->whereHas('produk', fn($q) => $q->where('produk.id_produk', $produk->id_produk))
-                ->where('minimal_beli', '<=', $jumlah)
-                ->first();
-
-            $nominalDiskon = 0;
-            if ($diskon) {
-                $nominalDiskon = round(($harga * $jumlah) * $diskon->besar_diskon / 100);
+            // 2. Validasi Stok
+            if ($tipe === 'grosir') {
+                if ($jumlah > $produk->stok_gudang) {
+                    return back()->withErrors(['stok' => "Stok gudang {$produk->nama_produk} tidak mencukupi."])->withInput();
+                }
+            } else {
+                if ($jumlah > $produk->stok_toko) {
+                    return back()->withErrors(['stok' => "Stok toko {$produk->nama_produk} tidak mencukupi."])->withInput();
+                }
             }
 
-            $subtotal             = ($harga * $jumlah) - $nominalDiskon;
-            $subtotalKeseluruhan += $harga * $jumlah;
-            $totalDiskon         += $nominalDiskon;
+            // 3. Logic Diskon (SINKRON DENGAN FRONTEND)
+            // Menghitung diskon berdasarkan persentase diskon pelanggan
+        // 3. Logic Diskon — baca dari tabel diskon (lewat diskon_produk)
+            $nominalDiskonPerItem = 0;
+            $today = now()->toDateString();
+
+            $diskonAktif = $produk->diskon()
+                ->where('is_aktif', true)
+                ->where('mulai_tgl', '<=', $today)
+                ->where('selesai_tgl', '>=', $today)
+                ->where(function($q) use ($tipe) {
+                    $q->where('lokasi_berlaku', 'semua')
+                    ->orWhere('lokasi_berlaku', $tipe === 'grosir' ? 'gudang' : 'toko');
+                })
+                ->first();
+
+                if ($diskonAktif) {
+                    $minimalBeli = $tipe === 'grosir'
+                        ? ($diskonAktif->minimal_beli_grosir ?? 0)
+                        : ($diskonAktif->minimal_beli ?? 0);
+
+                    if ($jumlah >= $minimalBeli) {
+                        $nominalDiskonPerItem = round($harga * ($diskonAktif->besar_diskon / 100));
+                    }
+                }
+
+            $subtotalItem         = ($harga * $jumlah) - $nominalDiskonPerItem;
+            $subtotalKeseluruhan += ($harga * $jumlah);
+            $totalDiskon         += $nominalDiskonPerItem;
 
             $items[] = [
-                'produk'         => $produk,
+                'id_produk'      => $produk->id_produk,
+                'produk_obj'     => $produk,
                 'jumlah'         => $jumlah,
                 'tipe'           => $tipe,
                 'harga'          => $harga,
-                'nominal_diskon' => $nominalDiskon,
-                'subtotal'       => $subtotal,
+                'nominal_diskon' => $nominalDiskonPerItem,
+                'subtotal'       => $subtotalItem,
             ];
         }
 
@@ -93,91 +133,85 @@ class TransaksiController extends Controller
         $bayar     = (int) $request->bayar;
         $kembalian = $bayar - $total;
 
-        // Setelah hitung $total, sebelum simpan transaksi
-if ($request->bayar < $total) {
-    return back()->withErrors(['bayar' => 'Jumlah bayar tidak boleh kurang dari total transaksi.'])->withInput();
-}
-
-foreach ($items as $item) {
-    if ($item['tipe'] === 'grosir') {
-        if ($item['jumlah'] > $item['produk']->stok_gudang) {
-            return back()->withErrors([
-                'stok' => "Stok gudang {$item['produk']->nama_produk} tidak cukup! Tersedia: {$item['produk']->stok_gudang} pcs"
-            ])->withInput();
+        if ($bayar < $total) {
+            return back()->withErrors(['bayar' => 'Uang bayar tidak cukup.'])->withInput();
         }
-    } else {
-        if ($item['jumlah'] > $item['produk']->stok_toko) {
-            return back()->withErrors([
-                'stok' => "Stok toko {$item['produk']->nama_produk} tidak cukup! Tersedia: {$item['produk']->stok_toko} pcs"
-            ])->withInput();
-        }
-    }
-}
 
-        // Simpan transaksi
-        $transaksi = Transaksi::create([
-            'tanggal'           => now(),
-            'id_user'           => auth()->id(),
-            'id_pelanggan'      => $request->id_pelanggan ?: null,
-            'subtotal'          => $subtotalKeseluruhan,
-            'total_diskon'      => $totalDiskon,
-            'total'             => $total,
-            'bayar'             => $bayar,
-            'kembalian'         => $kembalian,
-            'metode_pembayaran' => $request->metode_pembayaran,
-            'catatan'           => $request->catatan,
-        ]);
-
-        // Simpan detail transaksi + kurangi stok
-        foreach ($items as $item) {
-            DetailTransaksi::create([
-                'id_transaksi'   => $transaksi->id_transaksi,
-                'id_produk'      => $item['produk']->id_produk,
-                'tipe'           => $item['tipe'],
-                'jumlah'         => $item['jumlah'],
-                'harga'          => $item['harga'],
-                'nominal_diskon' => $item['nominal_diskon'],
-                'subtotal'       => $item['subtotal'],
+        DB::beginTransaction();
+        try {
+            $transaksi = Transaksi::create([
+                'tanggal'           => now(),
+                'id_user'           => Auth::id(),
+                'id_pelanggan'      => $request->id_pelanggan ?: null,
+                'subtotal'          => $subtotalKeseluruhan,
+                'total_diskon'      => $totalDiskon,
+                'total'             => $total,
+                'bayar'             => $bayar,
+                'kembalian'         => $kembalian,
+                'metode_pembayaran' => $request->metode_pembayaran,
+                'catatan'           => $request->catatan,
             ]);
 
-            // Kurangi stok sesuai tipe transaksi
-            if ($item['tipe'] === 'grosir') {
-                $item['produk']->stok_gudang -= $item['jumlah'];
-            } else {
-                $item['produk']->stok_toko -= $item['jumlah'];
+            foreach ($items as $item) {
+                DetailTransaksi::create([
+                    'id_transaksi'   => $transaksi->id_transaksi,
+                    'id_produk'      => $item['id_produk'],
+                    'tipe'           => $item['tipe'],
+                    'jumlah'         => $item['jumlah'],
+                    'harga'          => $item['harga'],
+                    'nominal_diskon' => $item['nominal_diskon'],
+                    'subtotal'       => $item['subtotal'],
+                ]);
+
+                $p = $item['produk_obj'];
+                if ($item['tipe'] === 'grosir') {
+                    $p->stok_gudang -= $item['jumlah'];
+                } else {
+                    $p->stok_toko -= $item['jumlah'];
+                }
+                $p->save();
             }
-            $item['produk']->save();
+
+            DB::commit();
+            return redirect()->route('transaksi.show', $transaksi->id_transaksi)
+                            ->with('success', 'Transaksi Berhasil!');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+        public function show($id)
+        {
+            $transaksi = Transaksi::with(['detail.produk', 'pelanggan', 'kasir'])->findOrFail($id);
+            return view('transaksi.show', compact('transaksi'));
         }
 
-        return redirect()->route('transaksi.show', $transaksi->id_transaksi)
-            ->with('success', 'Transaksi berhasil disimpan!');
-    }
+        public function destroy($id)
+        {
+            DB::beginTransaction();
+            try {
+                $transaksi = Transaksi::with('detail')->findOrFail($id);
 
-    public function show($id)
-    {
-        $transaksi = Transaksi::with(['detail.produk', 'pelanggan', 'kasir'])->findOrFail($id);
-        return view('transaksi.show', compact('transaksi'));
-    }
+                foreach ($transaksi->detail as $detail) {
+                    $produk = Produk::find($detail->id_produk);
+                    if ($produk) {
+                        if ($detail->tipe === 'grosir') {
+                            $produk->stok_gudang += $detail->jumlah;
+                        } else {
+                            $produk->stok_toko += $detail->jumlah;
+                        }
+                        $produk->save();
+                    }
+                }
 
-    public function destroy($id)
-    {
-        $transaksi = Transaksi::with('detail')->findOrFail($id);
-
-        // Kembalikan stok
-        foreach ($transaksi->detail as $detail) {
-            $produk = Produk::findOrFail($detail->id_produk);
-            if ($detail->tipe === 'grosir') {
-                $produk->stok_gudang += $detail->jumlah;
-            } else {
-                $produk->stok_toko += $detail->jumlah;
+                $transaksi->delete();
+                DB::commit();
+                return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
+            } catch (\Exception $e) {
+                DB::rollback();
+                return back()->with('error', 'Gagal menghapus transaksi.');
             }
-            $produk->save();
         }
-
-        $transaksi->delete();
-        return redirect()->route('transaksi.index')
-            ->with('success', 'Transaksi berhasil dihapus.');
     }
-
-    
-}

@@ -26,12 +26,16 @@
             </div>
         @endif
 
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-gray-100 text-gray-500 text-xs">
                     <th class="pb-3 text-left font-semibold">Nama Diskon</th>
                     <th class="pb-3 text-left font-semibold">Besar</th>
-                    <th class="pb-3 text-left font-semibold">Min. Beli</th>
+                    <th class="pb-3 text-left font-semibold">Lokasi</th>
+                    <th class="pb-3 text-left font-semibold">Pelanggan</th>
+                    <th class="pb-3 text-left font-semibold">Min. Beli Eceran</th>
+                    <th class="pb-3 text-left font-semibold">Min. Beli Grosir</th>
                     <th class="pb-3 text-left font-semibold">Periode</th>
                     <th class="pb-3 text-left font-semibold">Produk</th>
                     <th class="pb-3 text-left font-semibold">Status</th>
@@ -43,7 +47,26 @@
                 <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
                     <td class="py-3 font-medium text-gray-800">{{ $d->nama_diskon }}</td>
                     <td class="py-3 text-gray-600">{{ $d->besar_diskon }}%</td>
+                    <td class="py-3">
+                        @if($d->lokasi_berlaku === 'semua')
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">Semua</span>
+                        @elseif($d->lokasi_berlaku === 'gudang')
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">Gudang</span>
+                        @else
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">Toko</span>
+                        @endif
+                    </td>
+                    <td class="py-3">
+                        @if($d->id_pelanggan)
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+                                {{ $d->pelanggan->nama_pelanggan ?? '-' }}
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">Semua</span>
+                        @endif
+                    </td>
                     <td class="py-3 text-gray-600">{{ $d->minimal_beli }} pcs</td>
+                    <td class="py-3 text-gray-600">{{ $d->minimal_beli_grosir }} pcs</td>
                     <td class="py-3 text-gray-500 text-xs">
                         {{ $d->mulai_tgl->format('d/m/Y') }} — {{ $d->selesai_tgl->format('d/m/Y') }}
                     </td>
@@ -87,10 +110,11 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="py-10 text-center text-gray-400">Belum ada data diskon</td>
+                    <td colspan="10" class="py-10 text-center text-gray-400">Belum ada data diskon</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 </x-app-layout>

@@ -30,8 +30,9 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::dropIfExists('transaksis');
-    }
+public function down(): void
+{
+    // Samakan dengan nama tabel di method up()
+    Schema::dropIfExists('transaksi');
+}
 };

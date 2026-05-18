@@ -10,7 +10,6 @@
     </x-slot>
 
     <div class="flex flex-col gap-4">
-
         {{-- Header Card --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between">
@@ -28,8 +27,9 @@
                        class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition">
                         ← Kembali
                     </a>
+                    {{-- Form Hapus --}}
                     <form action="{{ route('transaksi.destroy', $transaksi->id_transaksi) }}" method="POST"
-                          onsubmit="return confirm('Yakin hapus transaksi ini?')">
+                          onsubmit="return confirm('Yakin hapus transaksi ini? Stok akan dikembalikan.')">
                         @csrf
                         @method('DELETE')
                         <button type="submit"
@@ -42,7 +42,6 @@
         </div>
 
         <div class="flex gap-4">
-
             {{-- Kiri: Detail Produk --}}
             <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h3 class="font-bold text-gray-800 mb-4">Produk yang Dibeli</h3>
@@ -51,16 +50,16 @@
                         <tr class="border-b border-gray-100 text-gray-500 text-xs">
                             <th class="pb-3 text-left font-semibold">Produk</th>
                             <th class="pb-3 text-left font-semibold">Tipe</th>
-                            <th class="pb-3 text-left font-semibold">Harga</th>
+                            <th class="pb-3 text-left font-semibold">Harga Asli</th>
                             <th class="pb-3 text-left font-semibold">Jumlah</th>
-                            <th class="pb-3 text-left font-semibold">Diskon</th>
+                            <th class="pb-3 text-left font-semibold">Potongan Diskon</th>
                             <th class="pb-3 text-right font-semibold">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($transaksi->detail as $d)
                         <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-                            <td class="py-3 font-medium text-gray-800">{{ $d->produk->nama_produk ?? '-' }}</td>
+                            <td class="py-3 font-medium text-gray-800">{{ $d->produk->nama_produk ?? 'Produk Terhapus' }}</td>
                             <td class="py-3">
                                 <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
                                     {{ $d->tipe === 'grosir' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700' }}">
@@ -70,7 +69,13 @@
                             <td class="py-3 text-gray-600">Rp {{ number_format($d->harga, 0, ',', '.') }}</td>
                             <td class="py-3 text-gray-600">{{ $d->jumlah }}</td>
                             <td class="py-3 text-orange-500">
-                                {{ $d->nominal_diskon > 0 ? '- Rp ' . number_format($d->nominal_diskon, 0, ',', '.') : '-' }}
+                                {{-- Menampilkan nominal diskon per item jika ada --}}
+                                @if($d->nominal_diskon > 0)
+                                    - Rp {{ number_format($d->nominal_diskon * $d->jumlah, 0, ',', '.') }}
+                                    <div class="text-[10px] text-gray-400">(@Rp {{ number_format($d->nominal_diskon, 0, ',', '.') }}/item)</div>
+                                @else
+                                    -
+                                @endif
                             </td>
                             <td class="py-3 text-right font-semibold text-gray-800">
                                 Rp {{ number_format($d->subtotal, 0, ',', '.') }}
@@ -83,8 +88,6 @@
 
             {{-- Kanan: Info & Ringkasan --}}
             <div class="w-72 flex flex-col gap-4">
-
-                {{-- Info Transaksi --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                     <h3 class="font-bold text-gray-800 mb-3">Info Transaksi</h3>
                     <div class="space-y-2 text-sm">
@@ -103,39 +106,37 @@
                         @if($transaksi->catatan)
                         <div class="pt-2 border-t border-gray-100">
                             <span class="text-gray-500 block mb-1">Catatan</span>
-                            <span class="text-gray-700 text-xs">{{ $transaksi->catatan }}</span>
+                            <span class="text-gray-700 text-xs italic">"{{ $transaksi->catatan }}"</span>
                         </div>
                         @endif
                     </div>
                 </div>
 
-                {{-- Ringkasan Pembayaran --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                    <h3 class="font-bold text-gray-800 mb-3">Ringkasan</h3>
+                    <h3 class="font-bold text-gray-800 mb-3">Ringkasan Pembayaran</h3>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between text-gray-600">
-                            <span>Subtotal</span>
+                            <span>Subtotal Kotor</span>
                             <span>Rp {{ number_format($transaksi->subtotal, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between text-orange-500">
-                            <span>Diskon</span>
+                            <span>Total Hemat (Diskon)</span>
                             <span>- Rp {{ number_format($transaksi->total_diskon, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between font-bold text-gray-800 text-base border-t border-gray-100 pt-2 mt-1">
-                            <span>Total</span>
+                            <span>Total Akhir</span>
                             <span>Rp {{ number_format($transaksi->total, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between text-gray-600 pt-1">
-                            <span>Bayar</span>
+                            <span>Dibayar</span>
                             <span>Rp {{ number_format($transaksi->bayar, 0, ',', '.') }}</span>
                         </div>
-                        <div class="flex justify-between text-[#2d6a4f] font-semibold">
+                        <div class="flex justify-between text-[#2d6a4f] font-bold bg-green-50 p-2 rounded-lg mt-2">
                             <span>Kembalian</span>
                             <span>Rp {{ number_format($transaksi->kembalian, 0, ',', '.') }}</span>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

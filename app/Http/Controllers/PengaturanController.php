@@ -117,9 +117,9 @@ public function suplier()
     public function suplierStore(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255',
+            'nama_suplier' => 'required|string|max:255',
             'alamat' => 'required',
-            'telepon' => 'required|string|max:15',
+            'no_hp' => 'required|string|max:15',
         ]);
 
         Suplier::create($request->all());

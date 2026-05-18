@@ -13,9 +13,11 @@ class Diskon extends Model
         'nama_diskon',
         'besar_diskon',
         'minimal_beli',
+        'minimal_beli_grosir',
         'mulai_tgl',
         'selesai_tgl',
         'is_aktif',
+        'lokasi_berlaku',
         'id_pelanggan', // Tambahkan field id_pelanggan untuk relasi
     ];
 

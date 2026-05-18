@@ -11,14 +11,12 @@
     @php
         $landing = \App\Models\LandingPage::first();
         
-        // Setup Variabel Dasar
-        $brandColor = $landing->login_text_color ?? '#2d6a4f';
+        $titleColor = $landing->login_text_color ?? '#2d6a4f'; 
         $bgColor    = $landing->login_bg_color ?? '#2d6a4f';
-        $fontFamily = $landing->login_font_family ?? "'Plus Jakarta Sans', sans-serif"; // <-- Tadi ini yang hilang
+        $fontFamily = $landing->login_font_family ?? "'Plus Jakarta Sans', sans-serif";
         $title      = $landing->login_title ?? 'Sarana Agro Makmur Sukses';
         $subtitle   = $landing->login_subtitle ?? 'SISTEM MANAJEMEN TOKO';
 
-        // 1. Definisikan inisial (Maksimal 3 huruf biar jadi SAS / SAM)
         $inisial = collect(explode(' ', $title))
             ->filter()
             ->map(function($word) {
@@ -27,12 +25,10 @@
             ->take(3)
             ->implode('');
 
-        // 2. Bersihkan Warna untuk API Avatar
         $cleanBgColor = str_replace('#', '', $bgColor);
     @endphp
 
     <style>
-        /* Pakai variabel fontFamily yang sudah didefinisikan di atas */
         * { font-family: {!! $fontFamily !!}; }
         body { overflow: hidden; background-color: #ffffff; }
 
@@ -98,14 +94,14 @@
             transition: all 0.2s;
         }
         .input-field:focus {
-            border-color: {{ $brandColor }};
+            border-color: #2d6a4f;
             background: #ffffff;
             outline: none;
-            box-shadow: 0 0 0 4px {{ $brandColor }}15;
+            box-shadow: 0 0 0 4px #2d6a4f15;
         }
 
         .btn-submit {
-            background: linear-gradient(135deg, {{ $brandColor }} 0%, color-mix(in srgb, {{ $brandColor }}, black 15%) 100%);
+            background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
             color: white;
             padding: 1.1rem;
             border-radius: 1rem;
@@ -113,14 +109,14 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            box-shadow: 0 8px 20px {{ $brandColor }}40;
+            box-shadow: 0 8px 20px #2d6a4f40;
             transition: all 0.3s;
             border: none;
             cursor: pointer;
         }
         .btn-submit:hover { 
             transform: translateY(-2px); 
-            box-shadow: 0 12px 28px {{ $brandColor }}60; 
+            box-shadow: 0 12px 28px #2d6a4f60; 
         }
 
         .input-label { 
@@ -153,13 +149,12 @@
     <div class="panel-right">
         <div class="w-full max-w-md">
             <div class="anim flex items-center gap-4 mb-2" style="animation-delay: 0.1s">
-                <h1 class="text-3xl font-black tracking-tight" style="color: {{ $brandColor }}">
+                {{-- Judul: warnanya dari login_text_color --}}
+                <h1 class="text-3xl font-black tracking-tight" style="color: {{ $titleColor }}">
                     {{ $title }}
                 </h1>
-                <div class="p-2 rounded-xl" style="background-color: {{ $brandColor }}15">
-                    <img src="{{ ($landing && $landing->login_icon_path) ? asset('storage/' . $landing->login_icon_path) : asset('images/logotoko.png') }}" 
-                         class="w-7 h-7 object-contain"
-                         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($inisial) }}&background={{ $cleanBgColor }}&color=ffffff&size=64&length={{ strlen($inisial) }}'">
+                <div class="p-2 rounded-xl bg-green-50">
+                    <span class="text-sm font-black text-[#2d6a4f]">{{ $inisial }}</span>
                 </div>
             </div>
 
@@ -194,10 +189,10 @@
 
                 <div class="anim flex justify-between items-center" style="animation-delay: 0.6s">
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="remember" class="w-4 h-4 rounded" style="accent-color: {{ $brandColor }}">
+                        <input type="checkbox" name="remember" class="w-4 h-4 rounded" style="accent-color: #2d6a4f">
                         <span class="text-[10px] font-bold text-gray-400 uppercase">Ingat Saya</span>
                     </label>
-                    <a href="#" class="text-[10px] font-bold uppercase hover:underline" style="color: {{ $brandColor }}">Lupa Password?</a>
+                    <a href="{{ route('password.request') }}" class="text-[10px] font-bold uppercase hover:underline text-[#2d6a4f]">Lupa Password?</a>
                 </div>
 
                 <div class="anim pt-2" style="animation-delay: 0.7s">

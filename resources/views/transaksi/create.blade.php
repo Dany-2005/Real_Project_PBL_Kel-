@@ -45,61 +45,65 @@
                         </tr>
                     </thead>
                     <tbody id="tableProduk">
-                        @foreach($produk as $p)
-                        @php
-                            $today = now()->toDateString();
-                            $diskonAktif = $p->diskon()
-                                ->where('is_aktif', true)
-                                ->where('mulai_tgl', '<=', $today)
-                                ->where('selesai_tgl', '>=', $today)
-                                ->first();
-                        @endphp
-                        <tr class="border-b border-gray-50 hover:bg-green-50 transition cursor-pointer produk-row"
-                            data-nama="{{ strtolower($p->nama_produk) }}"
-                            data-kategori="{{ $p->id_kategori }}"
-                            data-id="{{ $p->id_produk }}"
-                            data-nama-display="{{ $p->nama_produk }}"
-                            data-harga-satuan="{{ $p->harga_satuan }}"
-                            data-harga-grosir="{{ $p->harga_grosir ?? $p->harga_satuan }}"
-                            data-minimal-grosir="{{ $p->minimal_grosir ?? 0 }}"
-                            data-stok-toko="{{ $p->stok_toko }}"
-                            data-stok-gudang="{{ $p->stok_gudang }}"
-                            data-diskon="{{ $diskonAktif ? $diskonAktif->besar_diskon : 0 }}"
-                            data-minimal-diskon="{{ $diskonAktif ? $diskonAktif->minimal_beli : 0 }}">
-                            <td class="py-3 font-medium text-gray-800">{{ $p->nama_produk }}</td>
-                            <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_satuan, 0, ',', '.') }}</td>
-                            <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_grosir ?? 0, 0, ',', '.') }}</td>
-                            <td class="py-3">
-                                <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
-                                    {{ $p->stok_toko <= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700' }}">
-                                    {{ $p->stok_toko }} pcs
-                                </span>
-                            </td>
-                            <td class="py-3">
-                                <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
-                                    {{ $p->stok_gudang <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700' }}">
-                                    {{ $p->stok_gudang }} pcs
-                                </span>
-                            </td>
-                            <td class="py-3">
-                                @if($diskonAktif)
-                                    <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-semibold">
-                                        {{ $diskonAktif->besar_diskon }}% (min {{ $diskonAktif->minimal_beli }})
-                                    </span>
-                                @else
-                                    <span class="text-gray-300 text-xs">-</span>
-                                @endif
-                            </td>
-                            <td class="py-3">
-                                <button type="button"
-                                        onclick="tambahKeKeranjang(this)"
-                                        class="bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-xs px-3 py-1.5 rounded-lg transition">
-                                    + Tambah
-                                </button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
+    @foreach($produk as $p)
+    @php
+        $today = now()->toDateString();
+        $diskonAktif = $p->diskon()
+    ->where('is_aktif', true)
+    ->where('mulai_tgl', '<=', $today)
+    ->where('selesai_tgl', '>=', $today)
+    ->whereNull('id_pelanggan')  // ← hanya diskon umum
+    ->first();
+    @endphp
+    <tr class="border-b border-gray-50 hover:bg-green-50 transition cursor-pointer produk-row"
+        data-nama="{{ strtolower($p->nama_produk) }}"
+        data-kategori="{{ $p->id_kategori }}"
+        data-id="{{ $p->id_produk }}"
+        data-nama-display="{{ $p->nama_produk }}"
+        data-harga-satuan="{{ $p->harga_satuan }}"
+        data-harga-grosir="{{ $p->harga_grosir ?? $p->harga_satuan }}"
+        data-minimal-grosir="{{ $p->minimal_grosir ?? 0 }}"
+        data-stok-toko="{{ $p->stok_toko }}"
+        data-stok-gudang="{{ $p->stok_gudang }}"
+        data-diskon="{{ $diskonAktif ? $diskonAktif->besar_diskon : 0 }}"
+        data-minimal-diskon="{{ $diskonAktif ? $diskonAktif->minimal_beli : 0 }}"
+        data-minimal-diskon-grosir="{{ $diskonAktif ? $diskonAktif->minimal_beli_grosir : 0 }}"
+        data-lokasi-diskon="{{ $diskonAktif ? $diskonAktif->lokasi_berlaku : 'semua' }}"
+        data-pelanggan-diskon="{{ $diskonAktif ? ($diskonAktif->id_pelanggan ?? '') : '' }}">
+        <td class="py-3 font-medium text-gray-800">{{ $p->nama_produk }}</td>
+        <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_satuan, 0, ',', '.') }}</td>
+        <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_grosir ?? 0, 0, ',', '.') }}</td>
+        <td class="py-3">
+            <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
+                {{ $p->stok_toko <= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700' }}">
+                {{ $p->stok_toko }} pcs
+            </span>
+        </td>
+        <td class="py-3">
+            <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
+                {{ $p->stok_gudang <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700' }}">
+                {{ $p->stok_gudang }} pcs
+            </span>
+        </td>
+        <td class="py-3">
+            @if($diskonAktif)
+                <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-semibold">
+                    {{ $diskonAktif->besar_diskon }}% (min {{ $diskonAktif->minimal_beli }})
+                </span>
+            @else
+                <span class="text-gray-300 text-xs">-</span>
+            @endif
+        </td>
+        <td class="py-3">
+            <button type="button"
+                    onclick="tambahKeKeranjang(this)"
+                    class="bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-xs px-3 py-1.5 rounded-lg transition">
+                + Tambah
+            </button>
+        </td>
+    </tr>
+    @endforeach
+</tbody>
                 </table>
             </div>
         </div>
@@ -166,13 +170,15 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pelanggan</label>
-                        <select name="id_pelanggan"
+                        <select name="id_pelanggan" id="selectPelangganModal" 
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                             <option value="">-- Umum --</option>
                             @foreach($pelanggan as $p)
-                                <option value="{{ $p->id_pelanggan }}">{{ $p->nama_pelanggan }}</option>
+                                <option value="{{ $p->id_pelanggan }}" data-diskon="0">
+                                    {{ $p->nama_pelanggan }}
+                                </option>
                             @endforeach
-                        </select>
+                        </select>   
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kasir</label>
@@ -182,18 +188,10 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
-                    <div class="flex gap-4">
-                        @foreach(['tunai' => 'Tunai', 'transfer' => 'Transfer', 'kartu' => 'Kartu Debit/Kredit'] as $val => $label)
-                            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                                <input type="radio" name="metode_pembayaran" value="{{ $val }}"
-                                       {{ $val === 'tunai' ? 'checked' : '' }}
-                                       class="text-[#2d6a4f]">
-                                {{ $label }}
-                            </label>
-                        @endforeach
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
+                        <input type="hidden" name="metode_pembayaran" value="tunai">
+                        <span class="text-sm text-gray-700 font-medium">Tunai</span>
                     </div>
-                </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -246,264 +244,220 @@
     </div>
 
     <script>
-        const logoUrl = "{{ asset('images/logotoko.png') }}";
-        let keranjang = [];
+    const logoUrl = "{{ asset('images/logotoko.png') }}";
+    let keranjang = [];
+    let pelangganTerpilih = null;
 
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fix Search & Filter
         document.getElementById('searchProduk').addEventListener('input', filterProduk);
         document.getElementById('filterKategori').addEventListener('change', filterProduk);
 
-        function filterProduk() {
-            const keyword = document.getElementById('searchProduk').value.toLowerCase();
-            const kategori = document.getElementById('filterKategori').value;
-            document.querySelectorAll('.produk-row').forEach(row => {
-                const matchNama = row.dataset.nama.includes(keyword);
-                const matchKat  = kategori === '' || row.dataset.kategori === kategori;
-                row.style.display = (matchNama && matchKat) ? '' : 'none';
-            });
-        }
+        // Fix Listener Pelanggan (Gunakan yang ada di Modal)
+        const selectPelanggan = document.getElementById('selectPelangganModal');
+        if (selectPelanggan) {
+            selectPelanggan.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const id = selectedOption.value;
+                const diskon = parseFloat(selectedOption.dataset.diskon) || 0;
 
-        function tambahKeKeranjang(btn) {
-            const row = btn.closest('tr');
-            const id          = row.dataset.id;
-            const nama        = row.dataset.namaDisplay;
-            const hargaSatuan = parseInt(row.dataset.hargaSatuan);
-            const hargaGrosir = parseInt(row.dataset.hargaGrosir);
-            const minGrosir   = parseInt(row.dataset.minimalGrosir) || 0;
-            const stokToko    = parseInt(row.dataset.stokToko);
-            const stokGudang  = parseInt(row.dataset.stokGudang);
-            const diskon      = parseInt(row.dataset.diskon) || 0;
-            const minDiskon   = parseInt(row.dataset.minimalDiskon) || 0;
-
-            const existing = keranjang.find(k => k.id_produk === id);
-            if (existing) {
-                existing.jumlah += 1;
-            } else {
-                keranjang.push({
-                    id_produk: id, nama, hargaSatuan, hargaGrosir,
-                    minGrosir, stokToko, stokGudang,
-                    diskon, minDiskon,
-                    jumlah: 1, tipe: 'eceran'
-                });
-            }
-            renderKeranjang();
-        }
-
-        function renderKeranjang() {
-            const list = document.getElementById('keranjangList');
-            const kosong = document.getElementById('keranjangKosong');
-
-            Array.from(list.children).forEach(child => {
-                if (child.id !== 'keranjangKosong') child.remove();
-            });
-
-            if (keranjang.length === 0) {
-                kosong.style.display = '';
-                updateSummary();
-                return;
-            }
-
-            kosong.style.display = 'none';
-
-            keranjang.forEach((item, index) => {
-                const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
-                const nominalDiskon = (item.diskon > 0 && item.jumlah >= item.minDiskon)
-                    ? Math.round((harga * item.jumlah) * item.diskon / 100)
-                    : 0;
-                const subtotal = (harga * item.jumlah) - nominalDiskon;
-                const maxStok = item.tipe === 'grosir' ? item.stokGudang : item.stokToko;
-                const stokKurang = item.jumlah > maxStok;
-
-                const div = document.createElement('div');
-                div.className = `${stokKurang ? 'bg-red-50 border-red-200' : 'bg-gray-100 border-gray-200'} border rounded-xl p-3 text-sm cursor-grab active:cursor-grabbing`;
-                div.setAttribute('draggable', 'true');
-                div.setAttribute('data-index', index);
-
-                div.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', String(index));
-                    setTimeout(() => div.classList.add('opacity-40'), 0);
-                    document.getElementById('trashZone').classList.add('ring-2', 'ring-red-400', 'bg-red-50', 'text-red-600');
-                });
-                div.addEventListener('dragend', () => {
-                    div.classList.remove('opacity-40');
-                    document.getElementById('trashZone').classList.remove('ring-2', 'ring-red-400', 'bg-red-50', 'text-red-600', 'scale-125');
-                });
-
-                div.innerHTML = `
-                    <div class="relative overflow-hidden">
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <img src="${logoUrl}" alt="" class="w-12 h-12 object-contain opacity-[0.08] select-none">
-                        </div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-medium text-gray-800 text-xs">${item.nama}</span>
-                                <button onclick="hapusItem(${index})" class="text-red-400 hover:text-red-600 text-xs">✕</button>
-                            </div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <select onchange="ubahTipe(${index}, this.value)"
-                                        class="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none">
-                                    <option value="eceran" ${item.tipe === 'eceran' ? 'selected' : ''}>Eceran</option>
-                                    <option value="grosir" ${item.tipe === 'grosir' ? 'selected' : ''}>Grosir</option>
-                                </select>
-                                <div class="flex items-center gap-1 ml-auto">
-                                    <button onclick="ubahJumlah(${index}, -1)"
-                                            class="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">-</button>
-                                    <input type="number" min="1"
-                                           value="${item.jumlah}"
-                                           onchange="setJumlah(${index}, this.value)"
-                                           class="w-12 text-center text-xs font-semibold border ${stokKurang ? 'border-red-400' : 'border-gray-200'} rounded focus:outline-none focus:ring-1 focus:ring-[#2d6a4f]">
-                                    <button onclick="ubahJumlah(${index}, 1)"
-                                            class="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-xs font-bold">+</button>
-                                </div>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-500">
-                                <span>Rp ${formatRp(harga)} × ${item.jumlah}</span>
-                                ${nominalDiskon > 0 ? `<span class="text-orange-500">-Rp ${formatRp(nominalDiskon)}</span>` : ''}
-                            </div>
-                            <div class="flex justify-between text-xs font-semibold text-gray-800 mt-1">
-                                <span>Subtotal</span>
-                                <span>Rp ${formatRp(subtotal)}</span>
-                            </div>
-                            ${stokKurang ? `<div class="text-xs text-red-500 mt-1">⚠ Stok ${item.tipe} hanya ${maxStok} pcs</div>` : ''}
-                        </div>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-
-            updateSummary();
-        }
-
-        function setJumlah(index, val) {
-            const jumlah = parseInt(val) || 1;
-            keranjang[index].jumlah = jumlah < 1 ? 1 : jumlah;
-            renderKeranjang();
-        }
-
-        function validasiStok() {
-            for (let i = 0; i < keranjang.length; i++) {
-                const item = keranjang[i];
-                const maxStok = item.tipe === 'grosir' ? item.stokGudang : item.stokToko;
-                if (item.jumlah > maxStok) {
-                    alert(`Stok ${item.tipe} "${item.nama}" tidak cukup!\nStok tersedia: ${maxStok} pcs`);
-                    return false;
+                if (id) {
+                    pelangganTerpilih = { id, diskon };
+                } else {
+                    pelangganTerpilih = null;
                 }
-            }
-            return true;
-        }
-
-        function dropKeHapus(event) {
-            event.preventDefault();
-            const index = parseInt(event.dataTransfer.getData('text/plain'));
-            const trash = document.getElementById('trashZone');
-            trash.classList.remove('scale-125', 'text-red-600', 'ring-2', 'ring-red-400', 'bg-red-50');
-            if (!isNaN(index)) {
-                keranjang.splice(index, 1);
-                renderKeranjang();
-            }
-        }
-
-        function ubahTipe(index, tipe) {
-            keranjang[index].tipe = tipe;
-            renderKeranjang();
-        }
-
-        function ubahJumlah(index, delta) {
-            keranjang[index].jumlah += delta;
-            if (keranjang[index].jumlah <= 0) {
-                keranjang.splice(index, 1);
-            }
-            renderKeranjang();
-        }
-
-        function hapusItem(index) {
-            keranjang.splice(index, 1);
-            renderKeranjang();
-        }
-
-        function clearKeranjang() {
-            keranjang = [];
-            renderKeranjang();
-        }
-
-        function updateSummary() {
-            let subtotal = 0, totalDiskon = 0;
-            keranjang.forEach(item => {
-                const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
-                const nom = (item.diskon > 0 && item.jumlah >= item.minDiskon)
-                    ? Math.round((harga * item.jumlah) * item.diskon / 100) : 0;
-                subtotal += harga * item.jumlah;
-                totalDiskon += nom;
+                
+                renderKeranjang(); // Update total saat pelanggan ganti
             });
-            const total = subtotal - totalDiskon;
-            document.getElementById('summarySubtotal').textContent = 'Rp ' + formatRp(subtotal);
-            document.getElementById('summaryDiskon').textContent = '- Rp ' + formatRp(totalDiskon);
-            document.getElementById('summaryTotal').textContent = 'Rp ' + formatRp(total);
+        }
+    });
+
+    function filterProduk() {
+        const keyword = document.getElementById('searchProduk').value.toLowerCase();
+        const kategori = document.getElementById('filterKategori').value;
+        document.querySelectorAll('.produk-row').forEach(row => {
+            const matchNama = row.dataset.nama.includes(keyword);
+            const matchKat  = kategori === '' || row.dataset.kategori === kategori;
+            row.style.display = (matchNama && matchKat) ? '' : 'none';
+        });
+    }
+
+    function tambahKeKeranjang(btn) {
+        const row = btn.closest('tr');
+        const id          = row.dataset.id;
+        const nama        = row.dataset.namaDisplay;
+        const hargaSatuan = parseInt(row.dataset.hargaSatuan);
+        const hargaGrosir = parseInt(row.dataset.hargaGrosir);
+        const stokToko    = parseInt(row.dataset.stokToko);
+        const stokGudang  = parseInt(row.dataset.stokGudang);
+
+        const existing = keranjang.find(k => k.id_produk === id);
+        if (existing) {
+            existing.jumlah += 1;
+        } else {
+         keranjang.push({
+            id_produk: id,
+            nama,
+            hargaSatuan,
+            hargaGrosir,
+            stokToko,
+            stokGudang,
+            jumlah: 1,
+            tipe: 'eceran',
+            diskon: parseFloat(row.dataset.diskon) || 0,
+            minimalDiskon: parseInt(row.dataset.minimalDiskon) || 0,
+            minimalDiskonGrosir: parseInt(row.dataset.minimalDiskonGrosir) || 0,
+            pelangganDiskon: row.dataset.pelangganDiskon || ''   // ← ini penting
+        });
+        }
+        renderKeranjang();
+    }
+
+    function renderKeranjang() {
+        const list = document.getElementById('keranjangList');
+        const kosong = document.getElementById('keranjangKosong');
+
+        // Bersihkan list kecuali teks "kosong"
+        const items = list.querySelectorAll('div.bg-gray-100, div.bg-red-50');
+        items.forEach(item => item.remove());
+
+        if (keranjang.length === 0) {
+            kosong.style.display = '';
+            updateSummary(0, 0);
+            return;
         }
 
-        function checkout() {
-            if (keranjang.length === 0) {
-                alert('Keranjang masih kosong!');
-                return;
-            }
+        kosong.style.display = 'none';
 
-            // Validasi stok sebelum buka modal
-            if (!validasiStok()) return;
+        keranjang.forEach((item, index) => {
+            const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
+            const subtotalProduk = harga * item.jumlah;
+            const maxStok = item.tipe === 'grosir' ? item.stokGudang : item.stokToko;
+            const stokKurang = item.jumlah > maxStok;
 
-            let subtotal = 0, totalDiskon = 0;
-            keranjang.forEach(item => {
-                const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
-                const nom = (item.diskon > 0 && item.jumlah >= item.minDiskon)
-                    ? Math.round((harga * item.jumlah) * item.diskon / 100) : 0;
-                subtotal += harga * item.jumlah;
-                totalDiskon += nom;
-            });
-            const total = subtotal - totalDiskon;
+            const div = document.createElement('div');
+            div.className = `${stokKurang ? 'bg-red-50 border-red-200' : 'bg-gray-100 border-gray-200'} border rounded-xl p-3 text-sm mb-2`;
+            
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-medium text-gray-800 text-xs">${item.nama}</span>
+                    <button onclick="hapusItem(${index})" class="text-red-400 hover:text-red-600">✕</button>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <select onchange="ubahTipe(${index}, this.value)" class="text-xs border rounded-lg px-2 py-1">
+                        <option value="eceran" ${item.tipe === 'eceran' ? 'selected' : ''}>Eceran</option>
+                        <option value="grosir" ${item.tipe === 'grosir' ? 'selected' : ''}>Grosir</option>
+                    </select>
+                    <div class="flex items-center gap-1 ml-auto">
+                        <button onclick="ubahJumlah(${index}, -1)" class="w-6 h-6 bg-gray-200 rounded">-</button>
+                        <input type="number" value="${item.jumlah}" class="w-10 text-center text-xs border rounded" readonly>
+                        <button onclick="ubahJumlah(${index}, 1)" class="w-6 h-6 bg-gray-200 rounded">+</button>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs font-bold">
+                    <span>Subtotal</span>
+                    <span>Rp ${formatRp(subtotalProduk)}</span>
+                </div>
+                ${stokKurang ? `<div class="text-[10px] text-red-500 mt-1">⚠ Stok ${item.tipe} sisa ${maxStok}</div>` : ''}
+            `;
+            list.appendChild(div);
+        });
 
-            document.getElementById('modalSubtotal').textContent = 'Rp ' + formatRp(subtotal);
-            document.getElementById('modalDiskon').textContent = '- Rp ' + formatRp(totalDiskon);
-            document.getElementById('modalTotal').textContent = 'Rp ' + formatRp(total);
-            document.getElementById('inputBayar').value = total;
-            document.getElementById('displayKembalian').value = 'Rp 0';
+        calculateTotal();
+    }
 
-            const keranjangFormatted = keranjang.map(item => ({
-                id_produk: item.id_produk,
-                jumlah: item.jumlah,
-                tipe: item.tipe,
-            }));
-            document.getElementById('keranjangInput').value = JSON.stringify(keranjangFormatted);
-            document.getElementById('modalCheckout').classList.remove('hidden');
+    function calculateTotal() {
+    let subtotal = 0;
+    let diskonNominal = 0;
+
+    keranjang.forEach(item => {
+        const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
+        subtotal += harga * item.jumlah;
+
+        const pctDiskon = item.diskon || 0;
+        if (pctDiskon <= 0) return;
+
+        // Cek diskon ini khusus pelanggan tertentu?
+        const diskonUntukSemua = !item.pelangganDiskon || item.pelangganDiskon === '';
+        const pelangganCocok   = pelangganTerpilih && String(pelangganTerpilih.id) === String(item.pelangganDiskon);
+        if (!diskonUntukSemua && !pelangganCocok) return; // ← skip kalau pelanggan tidak cocok
+
+        // Minimal beli sesuai tipe
+        const minBeli = item.tipe === 'grosir' ? item.minimalDiskonGrosir : item.minimalDiskon;
+        if (item.jumlah < minBeli) return; // ← skip kalau belum cukup
+
+        diskonNominal += Math.round(harga * (pctDiskon / 100)) * item.jumlah;
+    });
+
+    updateSummary(subtotal, diskonNominal);
+}
+
+    function updateSummary(sub, diskon) {
+        const total = sub - diskon;
+        document.getElementById('summarySubtotal').textContent = 'Rp ' + formatRp(sub);
+        document.getElementById('summaryDiskon').textContent = '- Rp ' + formatRp(diskon);
+        document.getElementById('summaryTotal').textContent = 'Rp ' + formatRp(total);
+
+        // Update Modal juga agar sinkron
+        document.getElementById('modalSubtotal').textContent = 'Rp ' + formatRp(sub);
+        document.getElementById('modalDiskon').textContent = '- Rp ' + formatRp(diskon);
+        document.getElementById('modalTotal').textContent = 'Rp ' + formatRp(total);
+        document.getElementById('inputBayar').value = total;
+        hitungKembalian();
+    }
+
+    function ubahTipe(index, tipe) {
+        keranjang[index].tipe = tipe;
+        renderKeranjang();
+    }
+
+    function ubahJumlah(index, delta) {
+        keranjang[index].jumlah += delta;
+        if (keranjang[index].jumlah <= 0) keranjang.splice(index, 1);
+        renderKeranjang();
+    }
+
+    function hapusItem(index) {
+        keranjang.splice(index, 1);
+        renderKeranjang();
+    }
+
+    function checkout() {
+        if (keranjang.length === 0) return alert('Keranjang kosong!');
+        
+        // Cek stok sebelum buka modal
+        let stokAman = true;
+        keranjang.forEach(item => {
+            const max = item.tipe === 'grosir' ? item.stokGudang : item.stokToko;
+            if (item.jumlah > max) stokAman = false;
+        });
+        if (!stokAman) return alert('Ada produk yang melebihi stok!');
+
+        document.getElementById('keranjangInput').value = JSON.stringify(keranjang);
+        document.getElementById('modalCheckout').classList.remove('hidden');
+    }
+
+    function tutupModal() {
+        document.getElementById('modalCheckout').classList.add('hidden');
+    }
+
+    function hitungKembalian() {
+        const total = parseInt(document.getElementById('modalTotal').textContent.replace(/[^0-9]/g, '')) || 0;
+        const bayar = parseInt(document.getElementById('inputBayar').value) || 0;
+        const kembalian = bayar - total;
+        const display = document.getElementById('displayKembalian');
+
+        if (bayar < total) {
+            display.value = "Kurang Rp " + formatRp(total - bayar);
+            display.classList.add('text-red-500');
+        } else {
+            display.value = "Rp " + formatRp(kembalian);
+            display.classList.remove('text-red-500');
         }
+    }
 
-        function tutupModal() {
-            document.getElementById('modalCheckout').classList.add('hidden');
-        }
-
-        function hitungKembalian() {
-            const totalText = document.getElementById('modalTotal').textContent.replace(/[^0-9]/g, '');
-            const total = parseInt(totalText) || 0;
-            const bayar = parseInt(document.getElementById('inputBayar').value) || 0;
-            const kembalian = bayar - total;
-
-            const displayKembalian = document.getElementById('displayKembalian');
-            const btnSimpan = document.getElementById('btnSimpan');
-
-            if (bayar < total) {
-                displayKembalian.value = 'Kurang Rp ' + formatRp(total - bayar);
-                displayKembalian.classList.add('text-red-500');
-                displayKembalian.classList.remove('text-[#2d6a4f]');
-                btnSimpan.disabled = true;
-                btnSimpan.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                displayKembalian.value = 'Rp ' + formatRp(kembalian);
-                displayKembalian.classList.remove('text-red-500');
-                displayKembalian.classList.add('text-[#2d6a4f]');
-                btnSimpan.disabled = false;
-                btnSimpan.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        function formatRp(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
-    </script>
+    function formatRp(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+</script>
 </x-app-layout>

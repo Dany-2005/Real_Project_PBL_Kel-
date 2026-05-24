@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
-    ProfileController, ProdukController, KategoriController, 
-    PelangganController, TransaksiController, SuplierController, 
-    PembelianController, LaporanController, DashboardController, 
+    ProfileController, ProdukController, KategoriController,
+    PelangganController, TransaksiController, SuplierController,
+    LaporanController, DashboardController,
     PengaturanController, DiskonController, LandingPageController,
     LandingSlideController
 };
@@ -26,32 +26,37 @@ Route::middleware(['auth', 'role:pemilik,kasir'])->group(function () {
 
 // --- 3. ROUTE KHUSUS KASIR ---
 Route::middleware(['auth', 'role:kasir'])->group(function () {
-    Route::resource('transaksi', TransaksiController::class);
+    Route::resource('transaksi', TransaksiController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
 });
 
 // --- 4. ROUTE KHUSUS PEMILIK ---
 Route::middleware(['auth', 'role:pemilik'])->group(function () {
     Route::resource('pelanggan', PelangganController::class);
     Route::resource('produk', ProdukController::class);
-    Route::resource('kategori', KategoriController::class); 
+    Route::resource('kategori', KategoriController::class);
+    // FIX: suplier sekarang hanya pakai SuplierController (hapus duplikat di pengaturan)
     Route::resource('suplier', SuplierController::class);
-    Route::resource('pembelian', PembelianController::class);
     Route::resource('diskon', DiskonController::class);
 
-    // --- PENGATURAN LANDING PAGE ---
-   Route::prefix('pengaturan')->group(function () {
-    Route::get('/landing', [LandingPageController::class, 'index'])->name('landing.index');
-    Route::post('/landing/update', [LandingPageController::class, 'update'])->name('landing.update');
-    
-    // Gunakan LandingPageController saja biar satu pintu
-    Route::post('/landing/slide', [LandingPageController::class, 'storeSlide'])->name('landing.slide.store');
-    Route::delete('/landing/slide/{id}', [LandingPageController::class, 'destroySlide'])->name('landing.slide.destroy');
-});
+    // Pembelian (lewat TransaksiController)
+    Route::get('/pembelian', [TransaksiController::class, 'indexPembelian'])->name('pembelian.index');
+    Route::get('/pembelian/create', [TransaksiController::class, 'createPembelian'])->name('pembelian.create');
+    Route::post('/pembelian', [TransaksiController::class, 'storePembelian'])->name('pembelian.store');
+    Route::get('/pembelian/{id}', [TransaksiController::class, 'showPembelian'])->name('pembelian.show');
+    Route::delete('/pembelian/{id}', [TransaksiController::class, 'destroyPembelian'])->name('pembelian.destroy');
+
+    // Landing Page
+    Route::prefix('pengaturan')->group(function () {
+        Route::get('/landing', [LandingPageController::class, 'index'])->name('landing.index');
+        Route::post('/landing/update', [LandingPageController::class, 'update'])->name('landing.update');
+        Route::post('/landing/slide', [LandingPageController::class, 'storeSlide'])->name('landing.slide.store');
+        Route::delete('/landing/slide/{id}', [LandingPageController::class, 'destroySlide'])->name('landing.slide.destroy');
+    });
 
     Route::get('/laporan/export', [LaporanController::class, 'exportExcel'])->name('laporan.export');
     Route::post('/produk/{id}/transfer-stok', [ProdukController::class, 'transferStok'])->name('produk.transferStok');
 
-    // --- GROUP PENGATURAN AKUN & USER ---
+    // Pengaturan Akun & User
     Route::prefix('pengaturan')->name('pengaturan.')->group(function () {
         Route::get('/pemilik', [PengaturanController::class, 'pemilikIndex'])->name('pemilik');
         Route::put('/pemilik/update', [PengaturanController::class, 'pemilikUpdate'])->name('pemilik.update');
@@ -62,11 +67,9 @@ Route::middleware(['auth', 'role:pemilik'])->group(function () {
         Route::put('/kasir/{id}', [PengaturanController::class, 'kasirUpdate'])->name('kasir.update');
         Route::delete('/kasir/{id}', [PengaturanController::class, 'kasirDestroy'])->name('kasir.destroy');
 
-        Route::get('/suplier-user', [PengaturanController::class, 'suplier'])->name('suplier'); // Ganti dikit biar gak bentrok sama resource suplier
-        Route::post('/suplier-user', [PengaturanController::class, 'suplierStore'])->name('suplier.store');
-        Route::get('/suplier-user/{id}/edit', [PengaturanController::class, 'suplierEdit'])->name('suplier.edit');
-        Route::put('/suplier-user/{id}', [PengaturanController::class, 'suplierUpdate'])->name('suplier.update');
-        Route::delete('/suplier-user/{id}', [PengaturanController::class, 'suplierDestroy'])->name('suplier.destroy');
+        Route::get('/suplier', function () {
+            return redirect()->route('suplier.index');
+        })->name('suplier');
     });
 });
 

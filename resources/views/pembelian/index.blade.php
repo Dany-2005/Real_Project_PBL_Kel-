@@ -14,7 +14,6 @@
     @endif
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h2 class="text-xl font-bold text-gray-800">Data Pembelian</h2>
@@ -41,21 +40,21 @@
             <tbody>
                 @forelse($pembelian as $p)
                 <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-                    <td class="py-3 text-gray-500">{{ $p->id_pembelian }}</td>
+                    <td class="py-3 text-gray-500 font-mono">#{{ $p->id_transaksi }}</td>
                     <td class="py-3 text-gray-700">{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y') }}</td>
                     <td class="py-3 text-gray-700">{{ $p->suplier->nama_suplier ?? '-' }}</td>
                     <td class="py-3 font-medium text-gray-800">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
                     <td class="py-3 text-gray-500">{{ $p->keterangan ?? '-' }}</td>
                     <td class="py-3">
                         <div class="flex items-center gap-2">
-                            <a href="{{ route('pembelian.show', $p->id_pembelian) }}"
+                            <a href="{{ route('pembelian.show', $p->id_transaksi) }}"
                                class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition">
                                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                 </svg>
                             </a>
-                            <form action="{{ route('pembelian.destroy', $p->id_pembelian) }}" method="POST"
+                            <form action="{{ route('pembelian.destroy', $p->id_transaksi) }}" method="POST"
                                   onsubmit="return confirm('Yakin hapus pembelian ini? Stok produk akan berkurang.')">
                                 @csrf
                                 @method('DELETE')
@@ -76,7 +75,5 @@
                 @endforelse
             </tbody>
         </table>
-
     </div>
-
 </x-app-layout>

@@ -12,13 +12,16 @@
         {{-- Header --}}
         <div class="flex items-start justify-between mb-6">
             <div>
-                <h2 class="text-xl font-bold text-gray-800">Laporan Penjualan</h2>
-                <p class="text-xs text-gray-400">Kelola dan pantau laporan penjualan toko</p>
+                <h2 class="text-xl font-bold text-gray-800">
+                    Laporan {{ $tab === 'pembelian' ? 'Pembelian' : 'Penjualan' }}
+                </h2>
+                <p class="text-xs text-gray-400">
+                    Kelola dan pantau laporan {{ $tab === 'pembelian' ? 'pembelian' : 'penjualan' }} toko
+                </p>
             </div>
             <div class="flex items-center gap-2">
-                {{-- Tombol Export Excel hanya untuk Pemilik --}}
                 @if(auth()->user()->role == 'pemilik')
-                <a href="{{ route('laporan.export', ['dari' => $dari, 'sampai' => $sampai]) }}"
+                <a href="{{ route('laporan.export', ['dari' => $dari, 'sampai' => $sampai, 'tab' => $tab]) }}"
                    class="flex items-center gap-2 bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -26,7 +29,7 @@
                     Export Excel
                 </a>
                 @endif
-                
+
                 <button onclick="window.print()"
                         class="flex items-center gap-2 bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -39,6 +42,8 @@
 
         {{-- Filter Periode --}}
         <form method="GET" action="{{ route('laporan.index') }}" class="flex items-end gap-4 mb-6">
+            {{-- Simpan tab aktif saat filter --}}
+            <input type="hidden" name="tab" value="{{ $tab }}">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Periode Tanggal</label>
                 <div class="flex items-center gap-2">
@@ -55,7 +60,7 @@
             </button>
         </form>
 
-        {{-- Statistik: Grid berubah otomatis berdasarkan role --}}
+        {{-- Statistik --}}
         <div class="grid grid-cols-2 {{ auth()->user()->role == 'pemilik' ? 'lg:grid-cols-4' : 'lg:grid-cols-2' }} gap-4 mb-6">
 
             <div class="bg-green-50 border border-green-100 rounded-2xl p-5">
@@ -84,7 +89,6 @@
                 <p class="text-xs text-gray-400 mt-1">Jumlah transaksi</p>
             </div>
 
-            {{-- Bagian Khusus Pemilik --}}
             @if(auth()->user()->role == 'pemilik')
             <div class="bg-green-50 border border-green-100 rounded-2xl p-5">
                 <div class="flex items-center gap-3 mb-3">
@@ -117,7 +121,24 @@
 
         </div>
 
+        {{-- TAB PENJUALAN / PEMBELIAN --}}
+        <div class="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit">
+            <a href="{{ route('laporan.index', ['dari' => $dari, 'sampai' => $sampai, 'tab' => 'penjualan']) }}"
+               class="px-5 py-2 rounded-lg text-sm font-semibold transition
+                      {{ $tab === 'penjualan' ? 'bg-white text-[#2d6a4f] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Penjualan
+            </a>
+            @if(auth()->user()->role == 'pemilik')
+            <a href="{{ route('laporan.index', ['dari' => $dari, 'sampai' => $sampai, 'tab' => 'pembelian']) }}"
+               class="px-5 py-2 rounded-lg text-sm font-semibold transition
+                      {{ $tab === 'pembelian' ? 'bg-white text-[#2d6a4f] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Pembelian
+            </a>
+            @endif
+        </div>
+
         {{-- Tabel Data Penjualan --}}
+        @if($tab === 'penjualan')
         <h3 class="font-bold text-gray-700 mb-3">Data Penjualan</h3>
         <table class="w-full text-sm">
             <thead>
@@ -135,7 +156,7 @@
                 <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
                     <td class="px-4 py-3 text-gray-500">{{ $transaksi->firstItem() + $i }}</td>
                     <td class="px-4 py-3 text-gray-700">{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y') }}</td>
-                    <td class="px-4 py-3 text-gray-700">{{ $t->pelanggan->nama_pelanggan ?? '-' }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ $t->pelanggan->nama_pelanggan ?? 'Umum' }}</td>
                     <td class="px-4 py-3 text-gray-700">{{ $t->detail->first()->produk->nama_produk ?? '-' }}</td>
                     <td class="px-4 py-3 font-medium text-gray-800">Rp {{ number_format($t->total, 0, ',', '.') }}</td>
                     <td class="px-4 py-3">
@@ -157,6 +178,48 @@
             </tbody>
         </table>
 
+        {{-- Tabel Data Pembelian --}}
+        @else
+        <h3 class="font-bold text-gray-700 mb-3">Data Pembelian</h3>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-green-50 text-gray-600 text-xs">
+                    <th class="px-4 py-3 text-left font-semibold rounded-l-xl">No</th>
+                    <th class="px-4 py-3 text-left font-semibold">Tanggal</th>
+                    <th class="px-4 py-3 text-left font-semibold">Supplier</th>
+                    <th class="px-4 py-3 text-left font-semibold">Produk</th>
+                    <th class="px-4 py-3 text-left font-semibold">Total</th>
+                    <th class="px-4 py-3 text-left font-semibold rounded-r-xl">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($transaksi as $i => $t)
+                <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 text-gray-500">{{ $transaksi->firstItem() + $i }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y') }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ $t->suplier->nama_suplier ?? '-' }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ $t->detail->first()->produk->nama_produk ?? '-' }}</td>
+                    <td class="px-4 py-3 font-medium text-gray-800">Rp {{ number_format($t->total, 0, ',', '.') }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ route('pembelian.show', $t->id_transaksi) }}"
+                           class="flex items-center gap-1 text-xs text-[#2d6a4f] font-semibold bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition w-fit">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="py-10 text-center text-gray-400">Belum ada data pembelian</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+        @endif
+
         {{-- Pagination --}}
         <div class="flex items-center justify-between mt-4">
             <p class="text-xs text-gray-400">
@@ -170,7 +233,7 @@
                         </svg>
                     </span>
                 @else
-                    <a href="{{ $transaksi->previousPageUrl() }}&dari={{ $dari }}&sampai={{ $sampai }}"
+                    <a href="{{ $transaksi->previousPageUrl() }}&dari={{ $dari }}&sampai={{ $sampai }}&tab={{ $tab }}"
                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-green-50 transition">
                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
@@ -179,7 +242,7 @@
                 @endif
 
                 @if($transaksi->hasMorePages())
-                    <a href="{{ $transaksi->nextPageUrl() }}&dari={{ $dari }}&sampai={{ $sampai }}"
+                    <a href="{{ $transaksi->nextPageUrl() }}&dari={{ $dari }}&sampai={{ $sampai }}&tab={{ $tab }}"
                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-green-50 transition">
                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -197,10 +260,9 @@
 
     </div>
 
-    {{-- Print Style --}}
     <style>
         @media print {
-            aside, header, .no-print, nav, button, form { display: none !important; }
+            aside, header, .no-print, nav, button, form, a[href] { display: none !important; }
             main { padding: 0 !important; margin: 0 !important; }
             .bg-white { box-shadow: none !important; border: none !important; }
             .rounded-2xl { border-radius: 0 !important; }

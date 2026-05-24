@@ -69,7 +69,7 @@
                         <thead>
                             <tr class="border-b border-gray-100 text-gray-500 text-xs">
                                 <th class="pb-2 text-left font-semibold">Produk</th>
-                                <th class="pb-2 text-left font-semibold">Jumlah (dus)</th>
+                                <th class="pb-2 text-left font-semibold">Jumlah</th>
                                 <th class="pb-2 text-left font-semibold">Harga Beli</th>
                                 <th class="pb-2 text-left font-semibold">Subtotal</th>
                                 <th class="pb-2"></th>
@@ -119,7 +119,6 @@
                 </button>
             </div>
 
-            {{-- Search & Filter --}}
             <div class="flex gap-2 mb-4">
                 <input type="text" id="modalSearch" placeholder="Cari nama produk..."
                        oninput="filterModalProduk()"
@@ -133,7 +132,6 @@
                 </select>
             </div>
 
-            {{-- List Produk --}}
             <div class="overflow-y-auto flex-1">
                 <table class="w-full text-sm">
                     <thead class="sticky top-0 bg-white">
@@ -155,7 +153,7 @@
                             <td class="py-3">
                                 <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
                                     {{ $p->stok_gudang <= 5 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700' }}">
-                                    {{ $p->stok_gudang }} dus
+                                    {{ $p->stok_gudang }} pcs
                                 </span>
                             </td>
                             <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_satuan, 0, ',', '.') }}</td>
@@ -200,22 +198,17 @@
         }
 
         function pilihProduk(id, nama) {
-            // Cek apakah produk sudah ada di tabel
             const existing = document.querySelector(`tr[data-produk-id="${id}"]`);
             if (existing) {
                 tutupModalProduk();
-                // Fokus ke input jumlah produk yang sudah ada
                 existing.querySelector('.jumlah-input').focus();
                 return;
             }
 
-            // Hapus empty row jika ada
             const emptyRow = document.getElementById('emptyRow');
             if (emptyRow) emptyRow.remove();
 
             const tbody = document.getElementById('barisProduk');
-            const index = barisCount++;
-
             const tr = document.createElement('tr');
             tr.setAttribute('data-produk-id', id);
             tr.innerHTML = `
@@ -251,11 +244,8 @@
         function hapusBaris(btn) {
             btn.closest('tr').remove();
             hitungTotal();
-
-            // Tampilkan empty row jika kosong
             if (document.querySelectorAll('#barisProduk tr').length === 0) {
-                const tbody = document.getElementById('barisProduk');
-                tbody.innerHTML = `
+                document.getElementById('barisProduk').innerHTML = `
                     <tr id="emptyRow">
                         <td colspan="5" class="py-8 text-center text-gray-400 text-sm">
                             Belum ada produk — klik "+ Tambah Produk"

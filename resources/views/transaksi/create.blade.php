@@ -7,6 +7,23 @@
         </div>
     </x-slot>
 
+    {{-- FIX: Tampilan error validasi & error server --}}
+    @if($errors->any())
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            <ul class="list-disc pl-4 space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="flex gap-4 h-full">
 
         {{-- KIRI: Daftar Produk --}}
@@ -45,65 +62,75 @@
                         </tr>
                     </thead>
                     <tbody id="tableProduk">
-    @foreach($produk as $p)
-    @php
-        $today = now()->toDateString();
-        $diskonAktif = $p->diskon()
-    ->where('is_aktif', true)
-    ->where('mulai_tgl', '<=', $today)
-    ->where('selesai_tgl', '>=', $today)
-    ->whereNull('id_pelanggan')  // ← hanya diskon umum
-    ->first();
-    @endphp
-    <tr class="border-b border-gray-50 hover:bg-green-50 transition cursor-pointer produk-row"
-        data-nama="{{ strtolower($p->nama_produk) }}"
-        data-kategori="{{ $p->id_kategori }}"
-        data-id="{{ $p->id_produk }}"
-        data-nama-display="{{ $p->nama_produk }}"
-        data-harga-satuan="{{ $p->harga_satuan }}"
-        data-harga-grosir="{{ $p->harga_grosir ?? $p->harga_satuan }}"
-        data-minimal-grosir="{{ $p->minimal_grosir ?? 0 }}"
-        data-stok-toko="{{ $p->stok_toko }}"
-        data-stok-gudang="{{ $p->stok_gudang }}"
-        data-diskon="{{ $diskonAktif ? $diskonAktif->besar_diskon : 0 }}"
-        data-minimal-diskon="{{ $diskonAktif ? $diskonAktif->minimal_beli : 0 }}"
-        data-minimal-diskon-grosir="{{ $diskonAktif ? $diskonAktif->minimal_beli_grosir : 0 }}"
-        data-lokasi-diskon="{{ $diskonAktif ? $diskonAktif->lokasi_berlaku : 'semua' }}"
-        data-pelanggan-diskon="{{ $diskonAktif ? ($diskonAktif->id_pelanggan ?? '') : '' }}">
-        <td class="py-3 font-medium text-gray-800">{{ $p->nama_produk }}</td>
-        <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_satuan, 0, ',', '.') }}</td>
-        <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_grosir ?? 0, 0, ',', '.') }}</td>
-        <td class="py-3">
-            <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
-                {{ $p->stok_toko <= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700' }}">
-                {{ $p->stok_toko }} pcs
-            </span>
-        </td>
-        <td class="py-3">
-            <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
-                {{ $p->stok_gudang <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700' }}">
-                {{ $p->stok_gudang }} pcs
-            </span>
-        </td>
-        <td class="py-3">
-            @if($diskonAktif)
-                <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-semibold">
-                    {{ $diskonAktif->besar_diskon }}% (min {{ $diskonAktif->minimal_beli }})
-                </span>
-            @else
-                <span class="text-gray-300 text-xs">-</span>
-            @endif
-        </td>
-        <td class="py-3">
-            <button type="button"
-                    onclick="tambahKeKeranjang(this)"
-                    class="bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-xs px-3 py-1.5 rounded-lg transition">
-                + Tambah
-            </button>
-        </td>
-    </tr>
-    @endforeach
-</tbody>
+                        @foreach($produk as $p)
+                        @php
+                            $today = now()->toDateString();
+                            $semuaDiskon = $p->diskon()
+                                ->where('is_aktif', true)
+                                ->where('mulai_tgl', '<=', $today)
+                                ->where('selesai_tgl', '>=', $today)
+                                ->get();
+
+                            $diskonAktif = $semuaDiskon->whereNull('id_pelanggan')->first();
+
+                            $semuaDiskonJson = $semuaDiskon->map(fn($d) => [
+                                'besar'        => $d->besar_diskon,
+                                'min_eceran'   => $d->minimal_beli,
+                                'min_grosir'   => $d->minimal_beli_grosir,
+                                'lokasi'       => $d->lokasi_berlaku,
+                                'id_pelanggan' => $d->id_pelanggan,
+                            ])->toJson();
+                        @endphp
+                        <tr class="border-b border-gray-50 hover:bg-green-50 transition cursor-pointer produk-row"
+                            data-nama="{{ strtolower($p->nama_produk) }}"
+                            data-kategori="{{ $p->id_kategori }}"
+                            data-id="{{ $p->id_produk }}"
+                            data-nama-display="{{ $p->nama_produk }}"
+                            data-harga-satuan="{{ $p->harga_satuan }}"
+                            data-harga-grosir="{{ $p->harga_grosir ?? $p->harga_satuan }}"
+                            data-minimal-grosir="{{ $p->minimal_grosir ?? 0 }}"
+                            data-stok-toko="{{ $p->stok_toko }}"
+                            data-stok-gudang="{{ $p->stok_gudang }}"
+                            data-diskon="{{ $diskonAktif ? $diskonAktif->besar_diskon : 0 }}"
+                            data-minimal-diskon="{{ $diskonAktif ? $diskonAktif->minimal_beli : 0 }}"
+                            data-minimal-diskon-grosir="{{ $diskonAktif ? $diskonAktif->minimal_beli_grosir : 0 }}"
+                            data-lokasi-diskon="{{ $diskonAktif ? $diskonAktif->lokasi_berlaku : 'semua' }}"
+                            data-pelanggan-diskon="{{ $diskonAktif ? ($diskonAktif->id_pelanggan ?? '') : '' }}"
+                            data-semua-diskon="{{ $semuaDiskonJson }}">
+                            <td class="py-3 font-medium text-gray-800">{{ $p->nama_produk }}</td>
+                            <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_satuan, 0, ',', '.') }}</td>
+                            <td class="py-3 text-gray-600">Rp {{ number_format($p->harga_grosir ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-3">
+                                <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
+                                    {{ $p->stok_toko <= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700' }}">
+                                    {{ $p->stok_toko }} pcs
+                                </span>
+                            </td>
+                            <td class="py-3">
+                                <span class="px-2 py-0.5 rounded-lg text-xs font-semibold
+                                    {{ $p->stok_gudang <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700' }}">
+                                    {{ $p->stok_gudang }} pcs
+                                </span>
+                            </td>
+                            <td class="py-3">
+                                @if($diskonAktif)
+                                    <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-semibold">
+                                        {{ $diskonAktif->besar_diskon }}% (min {{ $diskonAktif->minimal_beli }})
+                                    </span>
+                                @else
+                                    <span class="text-gray-300 text-xs">-</span>
+                                @endif
+                            </td>
+                            <td class="py-3">
+                                <button type="button"
+                                        onclick="tambahKeKeranjang(this)"
+                                        class="bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-xs px-3 py-1.5 rounded-lg transition">
+                                    + Tambah
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -165,12 +192,13 @@
 
             <form id="formCheckout" method="POST" action="{{ route('transaksi.store') }}">
                 @csrf
+                {{-- FIX: keranjang dikirim sebagai JSON string --}}
                 <input type="hidden" id="keranjangInput" name="keranjang">
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pelanggan</label>
-                        <select name="id_pelanggan" id="selectPelangganModal" 
+                        <select name="id_pelanggan" id="selectPelangganModal"
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                             <option value="">-- Umum --</option>
                             @foreach($pelanggan as $p)
@@ -178,7 +206,7 @@
                                     {{ $p->nama_pelanggan }}
                                 </option>
                             @endforeach
-                        </select>   
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kasir</label>
@@ -188,10 +216,10 @@
                 </div>
 
                 <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
-                        <input type="hidden" name="metode_pembayaran" value="tunai">
-                        <span class="text-sm text-gray-700 font-medium">Tunai</span>
-                    </div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
+                    <input type="hidden" name="metode_pembayaran" value="tunai">
+                    <span class="text-sm text-gray-700 font-medium">Tunai</span>
+                </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -230,7 +258,8 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit" id="btnSimpan"
+                    {{-- FIX: pakai onclick untuk set keranjang sebelum submit --}}
+                    <button type="button" id="btnSimpan" onclick="submitTransaksi()"
                             class="flex-1 bg-[#2d6a4f] hover:bg-[#1b4332] text-white font-semibold py-3 rounded-xl transition">
                         Simpan Transaksi
                     </button>
@@ -249,11 +278,9 @@
     let pelangganTerpilih = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Fix Search & Filter
         document.getElementById('searchProduk').addEventListener('input', filterProduk);
         document.getElementById('filterKategori').addEventListener('change', filterProduk);
 
-        // Fix Listener Pelanggan (Gunakan yang ada di Modal)
         const selectPelanggan = document.getElementById('selectPelangganModal');
         if (selectPelanggan) {
             selectPelanggan.addEventListener('change', function() {
@@ -266,8 +293,8 @@
                 } else {
                     pelangganTerpilih = null;
                 }
-                
-                renderKeranjang(); // Update total saat pelanggan ganti
+
+                renderKeranjang();
             });
         }
     });
@@ -295,20 +322,17 @@
         if (existing) {
             existing.jumlah += 1;
         } else {
-         keranjang.push({
-            id_produk: id,
-            nama,
-            hargaSatuan,
-            hargaGrosir,
-            stokToko,
-            stokGudang,
-            jumlah: 1,
-            tipe: 'eceran',
-            diskon: parseFloat(row.dataset.diskon) || 0,
-            minimalDiskon: parseInt(row.dataset.minimalDiskon) || 0,
-            minimalDiskonGrosir: parseInt(row.dataset.minimalDiskonGrosir) || 0,
-            pelangganDiskon: row.dataset.pelangganDiskon || ''   // ← ini penting
-        });
+            keranjang.push({
+                id_produk: id,
+                nama,
+                hargaSatuan,
+                hargaGrosir,
+                stokToko,
+                stokGudang,
+                jumlah: 1,
+                tipe: 'eceran',
+                semuaDiskon: JSON.parse(row.dataset.semuaDiskon || '[]'),
+            });
         }
         renderKeranjang();
     }
@@ -317,7 +341,6 @@
         const list = document.getElementById('keranjangList');
         const kosong = document.getElementById('keranjangKosong');
 
-        // Bersihkan list kecuali teks "kosong"
         const items = list.querySelectorAll('div.bg-gray-100, div.bg-red-50');
         items.forEach(item => item.remove());
 
@@ -337,7 +360,7 @@
 
             const div = document.createElement('div');
             div.className = `${stokKurang ? 'bg-red-50 border-red-200' : 'bg-gray-100 border-gray-200'} border rounded-xl p-3 text-sm mb-2`;
-            
+
             div.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="font-medium text-gray-800 text-xs">${item.nama}</span>
@@ -367,30 +390,37 @@
     }
 
     function calculateTotal() {
-    let subtotal = 0;
-    let diskonNominal = 0;
+        let subtotal = 0;
+        let diskonNominal = 0;
 
-    keranjang.forEach(item => {
-        const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
-        subtotal += harga * item.jumlah;
+        keranjang.forEach(item => {
+            const harga = item.tipe === 'grosir' ? item.hargaGrosir : item.hargaSatuan;
+            subtotal += harga * item.jumlah;
 
-        const pctDiskon = item.diskon || 0;
-        if (pctDiskon <= 0) return;
+            const diskonCocok = (item.semuaDiskon || []).find(d => {
+                const lokasiOke = d.lokasi === 'semua'
+                    || (d.lokasi === 'gudang' && item.tipe === 'grosir')
+                    || (d.lokasi === 'toko'   && item.tipe === 'eceran');
+                if (!lokasiOke) return false;
 
-        // Cek diskon ini khusus pelanggan tertentu?
-        const diskonUntukSemua = !item.pelangganDiskon || item.pelangganDiskon === '';
-        const pelangganCocok   = pelangganTerpilih && String(pelangganTerpilih.id) === String(item.pelangganDiskon);
-        if (!diskonUntukSemua && !pelangganCocok) return; // ← skip kalau pelanggan tidak cocok
+                const untukSemua     = !d.id_pelanggan;
+                const pelangganCocok = pelangganTerpilih && String(pelangganTerpilih.id) === String(d.id_pelanggan);
+                if (!untukSemua && !pelangganCocok) return false;
 
-        // Minimal beli sesuai tipe
-        const minBeli = item.tipe === 'grosir' ? item.minimalDiskonGrosir : item.minimalDiskon;
-        if (item.jumlah < minBeli) return; // ← skip kalau belum cukup
+                const minBeli = item.tipe === 'grosir' ? d.min_grosir : d.min_eceran;
+                if (item.jumlah < minBeli) return false;
 
-        diskonNominal += Math.round(harga * (pctDiskon / 100)) * item.jumlah;
-    });
+                return true;
+            });
 
-    updateSummary(subtotal, diskonNominal);
-}
+            if (diskonCocok) {
+                // FIX: diskon per unit dikali jumlah
+                diskonNominal += Math.round(harga * (diskonCocok.besar / 100)) * item.jumlah;
+            }
+        });
+
+        updateSummary(subtotal, diskonNominal);
+    }
 
     function updateSummary(sub, diskon) {
         const total = sub - diskon;
@@ -398,7 +428,6 @@
         document.getElementById('summaryDiskon').textContent = '- Rp ' + formatRp(diskon);
         document.getElementById('summaryTotal').textContent = 'Rp ' + formatRp(total);
 
-        // Update Modal juga agar sinkron
         document.getElementById('modalSubtotal').textContent = 'Rp ' + formatRp(sub);
         document.getElementById('modalDiskon').textContent = '- Rp ' + formatRp(diskon);
         document.getElementById('modalTotal').textContent = 'Rp ' + formatRp(total);
@@ -422,10 +451,16 @@
         renderKeranjang();
     }
 
+    function clearKeranjang() {
+        if (keranjang.length === 0) return;
+        if (!confirm('Kosongkan semua keranjang?')) return;
+        keranjang = [];
+        renderKeranjang();
+    }
+
     function checkout() {
         if (keranjang.length === 0) return alert('Keranjang kosong!');
-        
-        // Cek stok sebelum buka modal
+
         let stokAman = true;
         keranjang.forEach(item => {
             const max = item.tipe === 'grosir' ? item.stokGudang : item.stokToko;
@@ -433,8 +468,24 @@
         });
         if (!stokAman) return alert('Ada produk yang melebihi stok!');
 
+        // Set keranjang ke hidden input saat buka modal
         document.getElementById('keranjangInput').value = JSON.stringify(keranjang);
         document.getElementById('modalCheckout').classList.remove('hidden');
+    }
+
+    // FIX: pastikan keranjang ter-set ulang sebelum submit (antisipasi perubahan di modal)
+    function submitTransaksi() {
+        const bayar = parseInt(document.getElementById('inputBayar').value) || 0;
+        const total = parseInt(document.getElementById('modalTotal').textContent.replace(/[^0-9]/g, '')) || 0;
+
+        if (bayar < total) {
+            alert('Uang bayar kurang dari total!');
+            return;
+        }
+
+        // Update keranjang input dengan data terbaru (termasuk pelanggan yang dipilih di modal)
+        document.getElementById('keranjangInput').value = JSON.stringify(keranjang);
+        document.getElementById('formCheckout').submit();
     }
 
     function tutupModal() {
@@ -450,14 +501,16 @@
         if (bayar < total) {
             display.value = "Kurang Rp " + formatRp(total - bayar);
             display.classList.add('text-red-500');
+            display.classList.remove('text-[#2d6a4f]');
         } else {
             display.value = "Rp " + formatRp(kembalian);
             display.classList.remove('text-red-500');
+            display.classList.add('text-[#2d6a4f]');
         }
     }
 
     function formatRp(num) {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
-</script>
+    </script>
 </x-app-layout>

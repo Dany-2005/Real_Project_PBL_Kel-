@@ -217,13 +217,13 @@ class TransaksiController extends Controller
     // ==================== PEMBELIAN ====================
 
     public function indexPembelian()
-    {
-        $pembelian = Transaksi::with(['detail.produk', 'suplier'])
-            ->where('jenis', 'pembelian')
-            ->latest('id_transaksi')
-            ->get();
-        return view('pembelian.index', compact('pembelian'));
-    }
+{
+    $pembelian = Transaksi::with(['detail.produk', 'suplier', 'user'])  // <-- TAMBAH 'user'
+        ->where('jenis', 'pembelian')
+        ->latest('id_transaksi')
+        ->get();
+    return view('pembelian.index', compact('pembelian'));
+}
 
     public function createPembelian()
     {
@@ -233,74 +233,116 @@ class TransaksiController extends Controller
     }
 
     public function storePembelian(Request $request)
-    {
-        $request->validate([
-            'tanggal'      => 'required|date',
-            'id_suplier'   => 'nullable|exists:suplier,id_suplier',
-            'keterangan'   => 'nullable|string|max:500',
-            'id_produk'    => 'required|array|min:1',
-            'id_produk.*'  => 'required|exists:produk,id_produk',
-            'jumlah.*'     => 'required|integer|min:1',
-            'harga_beli.*' => 'required|integer|min:0',
+{
+    // Debug log
+    \Log::info('StorePembelian dipanggil', $request->all());
+    
+    // Validasi
+    $validator = \Validator::make($request->all(), [
+        'tanggal'      => 'required|date',
+        'id_suplier'   => 'nullable|exists:suplier,id_suplier',
+        'keterangan'   => 'nullable|string|max:500',
+        'id_produk'    => 'required|array|min:1',
+        'id_produk.*'  => 'required|exists:produk,id_produk',
+        'jumlah.*'     => 'required|integer|min:1',
+        'harga_beli.*' => 'required|integer|min:0',
+    ]);
+
+    if ($validator->fails()) {
+        // Jika AJAX request
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        return back()->withErrors($validator)->withInput();
+    }
+
+    // Hitung total
+    $total = 0;
+    foreach ($request->id_produk as $i => $id_produk) {
+        $total += $request->jumlah[$i] * $request->harga_beli[$i];
+    }
+
+    DB::beginTransaction();
+    try {
+        // Simpan transaksi
+        $transaksi = Transaksi::create([
+            'jenis'       => 'pembelian',
+            'tanggal'     => $request->tanggal,
+            'id_user'     => Auth::id(),
+            'id_suplier'  => $request->id_suplier,
+            'total'       => $total,
+            'keterangan'  => $request->keterangan,
         ]);
 
-        $total = 0;
+        // Simpan detail
         foreach ($request->id_produk as $i => $id_produk) {
-            $total += $request->jumlah[$i] * $request->harga_beli[$i];
-        }
+            $jumlah     = $request->jumlah[$i];
+            $harga_beli = $request->harga_beli[$i];
+            $subtotal   = $jumlah * $harga_beli;
 
-        DB::beginTransaction();
-        try {
-            $transaksi = Transaksi::create([
-                'jenis'       => 'pembelian',
-                'tanggal'     => $request->tanggal,
-                'id_user'     => Auth::id(),
-                'id_suplier'  => $request->id_suplier,
-                'total'       => $total,
-                'keterangan'  => $request->keterangan,
+            DetailTransaksi::create([
+                'id_transaksi' => $transaksi->id_transaksi,
+                'id_produk'    => $id_produk,
+                'tipe_stok'    => 'gudang',
+                'jumlah'       => $jumlah,
+                'harga_beli'   => $harga_beli,
+                'harga'        => 0,
+                'subtotal'     => $subtotal,
             ]);
 
-            foreach ($request->id_produk as $i => $id_produk) {
-                $jumlah     = $request->jumlah[$i];
-                $harga_beli = $request->harga_beli[$i];
-                $subtotal   = $jumlah * $harga_beli;
-
-                DetailTransaksi::create([
-                    'id_transaksi' => $transaksi->id_transaksi,
-                    'id_produk'    => $id_produk,
-                    'tipe_stok'    => 'gudang',
-                    'jumlah'       => $jumlah,
-                    'harga_beli'   => $harga_beli,
-                    'harga'        => 0,
-                    'subtotal'     => $subtotal,
-                ]);
-
-                $produk = Produk::findOrFail($id_produk);
-                $produk->stok_gudang += $jumlah;
-                $produk->save();
-            }
-
-            LaporanPembelian::create([
-                'id_pembelian' => $transaksi->id_transaksi,
-                'tanggal'      => $transaksi->tanggal,
-                'total'        => $transaksi->total,
-            ]);
-
-            DB::commit();
-            return redirect()->route('pembelian.index')->with('success', 'Pembelian berhasil disimpan.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            // Update stok produk
+            $produk = Produk::findOrFail($id_produk);
+            $produk->stok_gudang += $jumlah;
+            $produk->save();
         }
+
+        // Simpan ke laporan pembelian
+        LaporanPembelian::create([
+            'id_pembelian' => $transaksi->id_transaksi,
+            'tanggal'      => $transaksi->tanggal,
+            'total'        => $transaksi->total,
+            'id_user'      => Auth::id(),
+        ]);
+
+        DB::commit();
+
+        // Jika AJAX request
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect' => route('pembelian.index'),
+                'message' => 'Pembelian berhasil disimpan'
+            ]);
+        }
+
+        return redirect()->route('pembelian.index')->with('success', 'Pembelian berhasil disimpan.');
+        
+    } catch (\Exception $e) {
+        DB::rollback();
+        
+        \Log::error('Error storePembelian: ' . $e->getMessage());
+        
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+        
+        return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
-
+}
     public function showPembelian($id)
-    {
-        $pembelian = Transaksi::with(['detail.produk', 'suplier'])
-            ->where('jenis', 'pembelian')
-            ->findOrFail($id);
-        return view('pembelian.show', compact('pembelian'));
-    }
+{
+    $pembelian = Transaksi::with(['detail.produk', 'suplier', 'user'])
+        ->where('jenis', 'pembelian')
+        ->findOrFail($id);
+    return view('pembelian.show', compact('pembelian'));
+}
 
     public function destroyPembelian($id)
     {

@@ -47,7 +47,7 @@
                 </div>
                 <textarea name="deskripsi" class="w-full p-4 bg-gray-50 rounded-2xl border outline-none h-full min-h-[120px]" placeholder="Deskripsi singkat...">{{ $data->deskripsi ?? '' }}</textarea>
             </div>
-            <button type="submit" class="mt-6 bg-[#2d6a4f] text-white px-10 py-3 rounded-xl font-bold">Simpan Teks</button>
+            <button type="submit" class="mt-6 bg-[#2d6a4f] text-white px-10 py-3 rounded-xl font-bold">Simpan</button>
         </form>
 
         {{-- Manajemen Slide --}}

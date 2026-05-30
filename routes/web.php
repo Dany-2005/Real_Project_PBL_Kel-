@@ -30,12 +30,10 @@ Route::middleware(['auth', 'role:kasir'])->group(function () {
 });
 
 // --- 4. ROUTE KHUSUS PEMILIK ---
-Route::middleware(['auth', 'role:pemilik'])->group(function () {
+Route::middleware(['auth', 'role:pemilik,pemilik2'])->group(function () {
     Route::resource('pelanggan', PelangganController::class);
     Route::resource('produk', ProdukController::class);
     Route::resource('kategori', KategoriController::class);
-    // FIX: suplier sekarang hanya pakai SuplierController (hapus duplikat di pengaturan)
-    Route::resource('suplier', SuplierController::class);
     Route::resource('diskon', DiskonController::class);
 
     // Pembelian (lewat TransaksiController)
@@ -67,9 +65,12 @@ Route::middleware(['auth', 'role:pemilik'])->group(function () {
         Route::put('/kasir/{id}', [PengaturanController::class, 'kasirUpdate'])->name('kasir.update');
         Route::delete('/kasir/{id}', [PengaturanController::class, 'kasirDestroy'])->name('kasir.destroy');
 
-        Route::get('/suplier', function () {
-            return redirect()->route('suplier.index');
-        })->name('suplier');
+        // Suplier — semua di bawah prefix pengaturan, nama route pengaturan.suplier.*
+        Route::get('/suplier', [SuplierController::class, 'index'])->name('suplier');
+        Route::post('/suplier', [SuplierController::class, 'store'])->name('suplier.store');
+        Route::get('/suplier/{id}/edit', [SuplierController::class, 'edit'])->name('suplier.edit');
+        Route::put('/suplier/{id}', [SuplierController::class, 'update'])->name('suplier.update');
+        Route::delete('/suplier/{id}', [SuplierController::class, 'destroy'])->name('suplier.destroy');
     });
 });
 

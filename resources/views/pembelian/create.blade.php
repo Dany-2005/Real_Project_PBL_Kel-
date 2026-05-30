@@ -16,6 +16,7 @@
             <p class="text-xs text-gray-400">Catat pembelian produk dari suplier</p>
         </div>
 
+        {{-- DEBUG ERRORS --}}
         @if($errors->any())
             <div class="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
                 <ul class="list-disc list-inside space-y-1">
@@ -26,18 +27,33 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('pembelian.store') }}">
+        {{-- SESSION DEBUG --}}
+        @if(session('debug_data'))
+            <div class="mb-4 bg-blue-50 border border-blue-200 text-blue-600 px-4 py-3 rounded-xl text-sm">
+                <strong>Debug Data:</strong>
+                <pre class="text-xs mt-2">{{ json_encode(session('debug_data'), JSON_PRETTY_PRINT) }}</pre>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        {{-- FORM DENGAN ID --}}
+        <form method="POST" action="{{ route('pembelian.store') }}" id="formPembelian">
             @csrf
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                    <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}"
+                    <input type="date" name="tanggal" id="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}"
                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Suplier</label>
-                    <select name="id_suplier"
+                    <select name="id_suplier" id="id_suplier"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                         <option value="">-- Pilih Suplier --</option>
                         @foreach($suplier as $s)
@@ -49,7 +65,7 @@
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-                    <textarea name="keterangan" rows="2" placeholder="Opsional..."
+                    <textarea name="keterangan" id="keterangan" rows="2" placeholder="Opsional..."
                               class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]">{{ old('keterangan') }}</textarea>
                 </div>
             </div>
@@ -94,7 +110,7 @@
             </div>
 
             <div class="flex items-center gap-3 mt-6">
-                <button type="submit"
+                <button type="button" onclick="simpanPembelian()"
                         class="bg-[#2d6a4f] hover:bg-[#1b4332] text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
                     Simpan
                 </button>
@@ -271,5 +287,80 @@
                 hitungTotal();
             }
         });
+
+        // ========== FUNGSI SIMPAN DENGAN FETCH ==========
+        function simpanPembelian() {
+            // Validasi basic
+            const tanggal = document.getElementById('tanggal').value;
+            if (!tanggal) {
+                alert('Tanggal harus diisi!');
+                return;
+            }
+
+            const produkRows = document.querySelectorAll('#barisProduk tr[data-produk-id]');
+            if (produkRows.length === 0) {
+                alert('Minimal 1 produk harus diisi!');
+                return;
+            }
+
+            // Cek apakah semua produk punya jumlah dan harga
+            let valid = true;
+            produkRows.forEach(row => {
+                const jumlah = row.querySelector('.jumlah-input').value;
+                const harga = row.querySelector('.harga-input').value;
+                if (!jumlah || jumlah <= 0) {
+                    alert('Jumlah harus diisi dan lebih dari 0!');
+                    valid = false;
+                }
+                if (!harga || harga <= 0) {
+                    alert('Harga beli harus diisi dan lebih dari 0!');
+                    valid = false;
+                }
+            });
+            if (!valid) return;
+
+            const form = document.getElementById('formPembelian');
+            const formData = new FormData(form);
+
+            // Debug: log semua data
+            console.log('=== DATA YANG DIKIRIM ===');
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+
+            // Kirim dengan fetch
+            fetch('{{ route("pembelian.store") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.success) {
+                    alert('Pembelian berhasil disimpan!');
+                    window.location.href = data.redirect;
+                } else if (data.errors) {
+                    // Tampilkan error validasi
+                    let errorMsg = 'Validasi gagal:\n';
+                    for (let key in data.errors) {
+                        errorMsg += '- ' + data.errors[key].join('\n  ') + '\n';
+                    }
+                    alert(errorMsg);
+                } else if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('Terjadi kesalahan tidak diketahui');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Terjadi kesalahan koneksi: ' + error.message);
+            });
+        }
     </script>
 </x-app-layout>

@@ -26,7 +26,7 @@
 
 <div class="flex h-screen overflow-hidden"
      x-data="{
-        openOperasional: {{ request()->routeIs('pembelian.*') || request()->routeIs('suplier.*') || request()->is('pengaturan/kasir*') ? 'true' : 'false' }},
+        openOperasional: {{ request()->routeIs('pembelian.*') || request()->is('pengaturan/suplier*') || request()->is('pengaturan/kasir*') ? 'true' : 'false' }},
         openPengaturan: {{ request()->routeIs('landing.*') || request()->is('pengaturan/pemilik') ? 'true' : 'false' }}
      }">
 
@@ -43,6 +43,7 @@
             </div>
 
             <nav class="mt-4 px-4 space-y-1 pb-4">
+
                 {{-- MENU UMUM --}}
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition
@@ -110,7 +111,7 @@
                     <div class="pt-2">
                         <button @click="openOperasional = !openOperasional"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-bold text-sm transition
-                                {{ request()->routeIs('pembelian.*') || request()->routeIs('suplier.*') || request()->is('pengaturan/kasir*') ? 'bg-[#2d6a4f] text-white' : 'text-gray-700 hover:bg-green-50' }}">
+                                {{ request()->routeIs('pembelian.*') || request()->is('pengaturan/suplier*') || request()->is('pengaturan/kasir*') ? 'bg-[#2d6a4f] text-white' : 'text-gray-700 hover:bg-green-50' }}">
                             <div class="flex items-center gap-3">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -132,9 +133,9 @@
                                 </svg>
                                 Pembelian
                             </a>
-                            <a href="{{ route('suplier.index') }}"
+                            <a href="{{ route('pengaturan.suplier') }}"
                                class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition
-                               {{ request()->routeIs('suplier.*') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f] hover:bg-green-50' }}">
+                               {{ request()->is('pengaturan/suplier*') ? 'text-[#2d6a4f] bg-green-50' : 'text-gray-500 hover:text-[#2d6a4f] hover:bg-green-50' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                                 </svg>
@@ -206,6 +207,7 @@
                         Transaksi
                     </a>
                 @endif
+
             </nav>
         </div>
 

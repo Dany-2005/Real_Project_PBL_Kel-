@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('laporan_pembelian', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('id_pembelian');
+            $table->unsignedBigInteger('id_user');
             $table->date('tanggal');
             $table->integer('total');
             $table->timestamps();

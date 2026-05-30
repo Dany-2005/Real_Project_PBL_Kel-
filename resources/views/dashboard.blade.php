@@ -57,10 +57,12 @@
             </div>
             <p class="text-2xl font-bold text-gray-800">{{ $stokMenipis }}</p>
             <p class="text-xs text-gray-400 mt-1">Produk</p>
-    <a href="{{ route('produk.index', ['sort' => 'menipis']) }}"
-   class="btn btn-primary mt-2 d-inline-block px-3 py-2 shadow rounded">
-   Cek Stok Detail
-</a>
+            @if(auth()->user()->role === 'pemilik' || auth()->user()->role === 'pemilik2')
+            <a href="{{ route('produk.index', ['sort' => 'menipis']) }}"
+            class="btn btn-primary mt-2 d-inline-block px-3 py-2 shadow rounded">
+            Cek Stok Detail
+            </a>
+            @endif
         </div>
 
     </div>
@@ -91,7 +93,7 @@
 
         {{-- Produk Terlaris --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h3 class="font-bold text-gray-700 mb-4">Produk Terlaris Hari Ini</h3>
+            <h3 class="font-bold text-gray-700 mb-4">Produk Terlaris Bulan Ini</h3>
             <div class="space-y-3">
                 @forelse($produkTerlaris as $index => $p)
                 <div class="flex items-center gap-3">

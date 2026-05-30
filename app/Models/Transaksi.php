@@ -15,6 +15,7 @@ class Transaksi extends Model
         'id_user',
         'id_pelanggan',
         'id_suplier',
+        'id_akun',
         'subtotal',
         'total_diskon',
         'total',
@@ -35,9 +36,16 @@ class Transaksi extends Model
         return $this->belongsTo(Pelanggan::class, 'id_pelanggan');
     }
 
+    // id_user bisa kasir atau pemilik/pemilik2
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user', 'id');
+    }
+
+    // alias kasir (backward compat)
     public function kasir()
     {
-        return $this->belongsTo(\App\Models\User::class, 'id_user');
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     public function suplier()
@@ -45,7 +53,11 @@ class Transaksi extends Model
         return $this->belongsTo(Suplier::class, 'id_suplier');
     }
 
-    // Scope filter jenis
+    public function akun()
+    {
+        return $this->belongsTo(Akun::class, 'id_akun');
+    }
+
     public function scopePenjualan($query)
     {
         return $query->where('jenis', 'penjualan');

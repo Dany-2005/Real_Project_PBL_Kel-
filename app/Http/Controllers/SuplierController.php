@@ -9,13 +9,8 @@ class SuplierController extends Controller
 {
     public function index()
     {
-        $suplier = Suplier::all();
-        return view('suplier.index', compact('suplier'));
-    }
-
-    public function create()
-    {
-        return view('suplier.create');
+        $supliers = Suplier::all();
+        return view('pengaturan.suplier', compact('supliers'));
     }
 
     public function store(Request $request)
@@ -39,13 +34,13 @@ class SuplierController extends Controller
 
         Suplier::create($request->only('nama_suplier', 'no_hp', 'alamat'));
 
-        return redirect('/suplier')->with('success', 'Data berhasil ditambahkan');
+        return redirect()->route('pengaturan.suplier')->with('success', 'Data berhasil ditambahkan');
     }
 
     public function edit($id)
     {
         $suplier = Suplier::findOrFail($id);
-        return view('suplier.edit', compact('suplier'));
+        return view('pengaturan.suplier-edit', compact('suplier'));
     }
 
     public function update(Request $request, $id)
@@ -70,7 +65,7 @@ class SuplierController extends Controller
         $suplier = Suplier::findOrFail($id);
         $suplier->update($request->only('nama_suplier', 'no_hp', 'alamat'));
 
-        return redirect('/suplier')->with('success', 'Data berhasil diupdate');
+        return redirect()->route('pengaturan.suplier')->with('success', 'Data berhasil diupdate');
     }
 
     public function destroy($id)
@@ -78,6 +73,6 @@ class SuplierController extends Controller
         $suplier = Suplier::findOrFail($id);
         $suplier->delete();
 
-        return redirect('/suplier')->with('success', 'Data berhasil dihapus');
+        return redirect()->route('pengaturan.suplier')->with('success', 'Data berhasil dihapus');
     }
 }

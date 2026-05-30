@@ -33,6 +33,7 @@
                     <th class="pb-3 text-left font-semibold">Tanggal</th>
                     <th class="pb-3 text-left font-semibold">Suplier</th>
                     <th class="pb-3 text-left font-semibold">Total</th>
+                    <th class="pb-3 text-left font-semibold">Petugas</th>  {{-- TAMBAH INI --}}
                     <th class="pb-3 text-left font-semibold">Keterangan</th>
                     <th class="pb-3 text-left font-semibold">Aksi</th>
                 </tr>
@@ -44,6 +45,7 @@
                     <td class="py-3 text-gray-700">{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y') }}</td>
                     <td class="py-3 text-gray-700">{{ $p->suplier->nama_suplier ?? '-' }}</td>
                     <td class="py-3 font-medium text-gray-800">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
+                    <td class="py-3 text-gray-700">{{ $p->user->name ?? '-' }} {{-- TAMBAH INI --}}</td>
                     <td class="py-3 text-gray-500">{{ $p->keterangan ?? '-' }}</td>
                     <td class="py-3">
                         <div class="flex items-center gap-2">
@@ -70,7 +72,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="py-10 text-center text-gray-400">Belum ada data pembelian</td>
+                    <td colspan="7" class="py-10 text-center text-gray-400">Belum ada data pembelian</td> {{-- colspan jadi 7 --}}
                 </tr>
                 @endforelse
             </tbody>

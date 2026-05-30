@@ -22,44 +22,55 @@ class DashboardController extends Controller
         $selectedDate = Carbon::createFromDate($tahun, $bulan, 1);
 
         // 4 kartu statistik (tetap hari ini)
-        $totalTransaksiHariIni = Transaksi::whereDate('tanggal', $today)->count();
-        $totalPenjualanHariIni = Transaksi::whereDate('tanggal', $today)->sum('total');
-        $produkTerjualHariIni  = DetailTransaksi::whereHas('transaksi', function($q) use ($today) {
-            $q->whereDate('tanggal', $today);
+        $totalTransaksiHariIni = Transaksi::where('jenis', 'penjualan')
+            ->whereDate('tanggal', $today)
+            ->count();
+
+        $totalPenjualanHariIni = Transaksi::where('jenis', 'penjualan')
+            ->whereDate('tanggal', $today)
+            ->sum('total');
+
+        $produkTerjualHariIni = DetailTransaksi::whereHas('transaksi', function($q) use ($today) {
+            $q->where('jenis', 'penjualan')
+              ->whereDate('tanggal', $today);
         })->sum('jumlah');
 
         // Hitung stok menipis
         $stokMenipis = Produk::where('stok_toko', '<=', 10)
-                                 ->orWhere('stok_gudang', '<=', 5)
-                                 ->count();
-        
-        // Kita buat kedua variabel ini agar view tidak error
+            ->orWhere('stok_gudang', '<=', 5)
+            ->count();
+
         $jumlahStokMenipis = $stokMenipis;
 
         // Transaksi terakhir
         $transaksiTerakhir = Transaksi::with(['detail.produk', 'pelanggan'])
+            ->where('jenis', 'penjualan')
             ->whereDate('tanggal', $today)
             ->latest('id_transaksi')
             ->take(5)
             ->get();
 
         // Produk terlaris
-        $produkTerlaris = DetailTransaksi::whereHas('transaksi', function($q) use ($today) {
-                $q->whereDate('tanggal', $today);
-            })
-            ->join('produk', 'detail_transaksi.id_produk', '=', 'produk.id_produk')
-            ->select('produk.nama_produk', DB::raw('SUM(detail_transaksi.jumlah) as total_terjual'))
-            ->groupBy('produk.id_produk', 'produk.nama_produk')
-            ->orderByDesc('total_terjual')
-            ->take(5)
-            ->get();
+        $produkTerlaris = DetailTransaksi::whereHas('transaksi', function($q) use ($bulan, $tahun) {
+        $q->where('jenis', 'penjualan')
+          ->whereMonth('tanggal', $bulan)
+          ->whereYear('tanggal', $tahun);
+    })
+        ->join('produk', 'detail_transaksi.id_produk', '=', 'produk.id_produk')
+        ->select('produk.nama_produk', DB::raw('SUM(detail_transaksi.jumlah) as total_terjual'))
+        ->groupBy('produk.id_produk', 'produk.nama_produk')
+        ->orderByDesc('total_terjual')
+        ->take(5)
+        ->get();
 
         // Grafik per hari sesuai bulan yang dipilih
         $grafik = collect(range(0, $selectedDate->daysInMonth - 1))->map(function($i) use ($selectedDate) {
             $date = $selectedDate->copy()->addDays($i);
             return [
                 'tanggal' => $date->format('d'),
-                'total'   => Transaksi::whereDate('tanggal', $date)->sum('total'),
+                'total'   => Transaksi::where('jenis', 'penjualan')
+                                ->whereDate('tanggal', $date)
+                                ->sum('total'),
             ];
         });
 

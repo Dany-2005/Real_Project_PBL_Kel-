@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'pemilik@gmail.com'],
             [
                 'name' => 'pemilik',
-                'password' => bcrypt('12345678'),
+                'password' => bcrypt('pemilik.12345'),
                 'role' => 'pemilik',
                 'email_verified_at' => now(),
             ]

@@ -115,7 +115,13 @@
                             <td class="py-3">
                                 @if($diskonAktif)
                                     <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-semibold">
-                                        {{ $diskonAktif->besar_diskon }}% (min {{ $diskonAktif->minimal_beli }})
+                                        {{ $diskonAktif->besar_diskon }}%
+                                        @if($diskonAktif->minimal_beli > 0)
+                                            | Eceran min {{ $diskonAktif->minimal_beli }}
+                                        @endif
+                                        @if($diskonAktif->minimal_beli_grosir > 0)
+                                            | Grosir min {{ $diskonAktif->minimal_beli_grosir }}
+                                        @endif
                                     </span>
                                 @else
                                     <span class="text-gray-300 text-xs">-</span>

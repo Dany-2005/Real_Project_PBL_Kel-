@@ -15,6 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_user')->nullable();
             $table->unsignedBigInteger('id_pelanggan')->nullable();
             $table->unsignedBigInteger('id_suplier')->nullable();   // ← kolom baru
+            $table->unsignedBigInteger('id_akun')->default(0);
             $table->integer('subtotal')->default(0);
             $table->integer('total_diskon')->default(0);
             $table->integer('total')->default(0);
@@ -23,10 +24,11 @@ return new class extends Migration
             $table->string('metode_pembayaran')->nullable();
             $table->text('keterangan')->nullable();                 // ← kolom baru
             $table->text('catatan')->nullable();
-            $table->timestamps();
+            $table->timestamps();           
 
             $table->foreign('id_pelanggan')->references('id_pelanggan')->on('pelanggan')->onDelete('set null');
             $table->foreign('id_suplier')->references('id_suplier')->on('suplier')->onDelete('set null');
+            
         });
     }
 
